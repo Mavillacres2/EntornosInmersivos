@@ -20,6 +20,15 @@ interface ManagedSource {
   disconnect: () => void;
 }
 
+export interface AmbientSoundLayer {
+  id: string;
+  assetPath: string | null;
+  position?: Vector3;
+  volume?: number;
+}
+
+type PlayableAmbientSoundLayer = AmbientSoundLayer & { assetPath: string };
+
 interface SpatialOutput {
   input: GainNode;
   cleanup: () => void;
@@ -31,6 +40,7 @@ export interface SpatialSoundOptions {
   volume?: number;
   playbackRate?: number;
   durationMs?: number;
+  assetPath?: string | null;
 }
 
 export class AudioManager {
@@ -45,6 +55,7 @@ export class AudioManager {
   private readonly ambientSources: ManagedSource[] = [];
 
   private enabled = true;
+  private ambientLayerOverride: AmbientSoundLayer[] | null = null;
   private ambientRequested = false;
   private ambientPlaying = false;
   private ambientVolume: number = AUDIO_CONFIG.ambientVolume;
@@ -70,9 +81,13 @@ export class AudioManager {
     });
   }
 
-  startAmbientAudio(): void {
+  startAmbientAudio(layers?: AmbientSoundLayer[]): void {
     if (!this.enabled) {
       return;
+    }
+
+    if (layers) {
+      this.ambientLayerOverride = layers.map((layer) => ({ ...layer }));
     }
 
     this.ambientRequested = true;
@@ -137,7 +152,10 @@ export class AudioManager {
         return;
       }
 
-      const assetPath = this.getDistractorAsset(options.id);
+      const assetPath =
+        options.assetPath !== undefined
+          ? options.assetPath
+          : this.getDistractorAsset(options.id);
 
       if (!assetPath) {
         this.playProceduralDistractor(audioContext, options);
@@ -318,7 +336,7 @@ export class AudioManager {
       return;
     }
 
-    const configuredAmbient = this.getConfiguredAmbientEntries();
+    const configuredAmbient = this.getConfiguredAmbientLayers();
 
     if (configuredAmbient.length === 0) {
       this.startProceduralAmbientLayers(audioContext);
@@ -330,18 +348,18 @@ export class AudioManager {
 
   private async startConfiguredAmbientLayers(
     audioContext: AudioContext,
-    entries: Array<[AmbientAudioId, string]>
+    entries: PlayableAmbientSoundLayer[]
   ): Promise<void> {
     const sources: ManagedSource[] = [];
 
-    for (const [id, assetPath] of entries) {
-      const buffer = await this.loadBuffer(`ambient:${id}`, assetPath);
+    for (const layer of entries) {
+      const buffer = await this.loadBuffer(`ambient:${layer.id}`, layer.assetPath);
 
       if (!buffer || !this.enabled || !this.ambientRequested) {
         continue;
       }
 
-      sources.push(this.playAmbientBufferLoop(audioContext, id, buffer));
+      sources.push(this.playAmbientBufferLoop(audioContext, layer, buffer));
     }
 
     if (sources.length === 0) {
@@ -418,22 +436,29 @@ export class AudioManager {
 
   private playAmbientBufferLoop(
     audioContext: AudioContext,
-    id: AmbientAudioId,
+    layer: AmbientSoundLayer,
     buffer: AudioBuffer
   ): ManagedSource {
     const source = audioContext.createBufferSource();
     source.buffer = buffer;
     source.loop = true;
 
-    const isOutdoorLayer = id === "distantOutdoor";
-    const output = isOutdoorLayer
+    const isOutdoorLayer = layer.id === "distantOutdoor";
+    const output = layer.position
+      ? this.createSpatialOutput(
+          audioContext,
+          layer.position,
+          layer.volume ?? 0.45,
+          "ambient"
+        )
+      : isOutdoorLayer
       ? this.createSpatialOutput(
           audioContext,
           new Vector3(-8.5, 2.3, -1.1),
-          0.45,
+          layer.volume ?? 0.45,
           "ambient"
         )
-      : this.createOutput(audioContext, 0.65, "ambient");
+      : this.createOutput(audioContext, layer.volume ?? 0.65, "ambient");
 
     source.connect(output.input);
     source.start();
@@ -577,6 +602,26 @@ export class AudioManager {
         this.playDistantConversationCue(audioContext, position, volume);
         return;
 
+      case "beep":
+        this.playSpaceBeepCue(audioContext, position, volume);
+        return;
+
+      case "radio":
+        this.playSpaceRadioCue(audioContext, position, volume);
+        return;
+
+      case "mechanical":
+        this.playSpaceMechanicalCue(audioContext, position, volume);
+        return;
+
+      case "alarm":
+        this.playSpaceAlarmCue(audioContext, position, volume);
+        return;
+
+      case "robotMotor":
+        this.playSpaceRobotMotorCue(audioContext, position, volume);
+        return;
+
       default:
         this.playToneAt(
           audioContext,
@@ -659,6 +704,62 @@ export class AudioManager {
         position
       );
     });
+  }
+
+  private playSpaceBeepCue(
+    audioContext: AudioContext,
+    position: Vector3 | undefined,
+    volume: number
+  ): void {
+    const now = audioContext.currentTime;
+
+    this.playToneAt(audioContext, 880, now, 0.08, 0.16 * volume, "sine", position);
+    this.playToneAt(audioContext, 1180, now + 0.09, 0.07, 0.1 * volume, "triangle", position);
+  }
+
+  private playSpaceRadioCue(
+    audioContext: AudioContext,
+    position: Vector3 | undefined,
+    volume: number
+  ): void {
+    const now = audioContext.currentTime;
+
+    this.playNoiseBurst(audioContext, position, now, 0.42, 0.1 * volume, "bandpass", 1400);
+    this.playToneAt(audioContext, 420, now + 0.04, 0.14, 0.035 * volume, "triangle", position);
+    this.playToneAt(audioContext, 510, now + 0.22, 0.12, 0.03 * volume, "sine", position);
+  }
+
+  private playSpaceMechanicalCue(
+    audioContext: AudioContext,
+    position: Vector3 | undefined,
+    volume: number
+  ): void {
+    const now = audioContext.currentTime;
+
+    this.playNoiseBurst(audioContext, position, now, 0.26, 0.13 * volume, "lowpass", 620);
+    this.playToneAt(audioContext, 210, now + 0.02, 0.22, 0.08 * volume, "sawtooth", position);
+  }
+
+  private playSpaceAlarmCue(
+    audioContext: AudioContext,
+    position: Vector3 | undefined,
+    volume: number
+  ): void {
+    const now = audioContext.currentTime;
+
+    this.playToneAt(audioContext, 720, now, 0.1, 0.09 * volume, "sine", position);
+    this.playToneAt(audioContext, 520, now + 0.12, 0.1, 0.075 * volume, "sine", position);
+  }
+
+  private playSpaceRobotMotorCue(
+    audioContext: AudioContext,
+    position: Vector3 | undefined,
+    volume: number
+  ): void {
+    const now = audioContext.currentTime;
+
+    this.playToneAt(audioContext, 150, now, 0.34, 0.08 * volume, "triangle", position);
+    this.playNoiseBurst(audioContext, position, now, 0.34, 0.05 * volume, "lowpass", 360);
   }
 
   private playTone(
@@ -902,6 +1003,9 @@ export class AudioManager {
       const response = await fetch(assetPath);
 
       if (!response.ok) {
+        console.warn(
+          `Audio no encontrado (${response.status}): ${assetPath}. Se usara fallback procedural si esta disponible.`
+        );
         return null;
       }
 
@@ -913,11 +1017,18 @@ export class AudioManager {
     }
   }
 
-  private getConfiguredAmbientEntries(): Array<[AmbientAudioId, string]> {
-    return (
-      Object.entries(AUDIO_ASSETS.ambient) as Array<[AmbientAudioId, string | null]>
-    ).filter(
-      (entry): entry is [AmbientAudioId, string] => typeof entry[1] === "string"
+  private getConfiguredAmbientLayers(): PlayableAmbientSoundLayer[] {
+    const layers =
+      this.ambientLayerOverride ??
+      (Object.entries(AUDIO_ASSETS.ambient) as Array<[AmbientAudioId, string | null]>)
+        .map(([id, assetPath]) => ({
+          id,
+          assetPath
+        }));
+
+    return layers.filter(
+      (layer): layer is PlayableAmbientSoundLayer =>
+        typeof layer.assetPath === "string"
     );
   }
 

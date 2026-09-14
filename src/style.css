@@ -17,6 +17,87 @@ body {
   outline: none;
 }
 
+#scenarioSelector {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-content: center;
+  box-sizing: border-box;
+  padding: 28px;
+  background: linear-gradient(135deg, #dfe9e6 0%, #c8d8dc 52%, #eadfbf 100%);
+  color: #16232a;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#scenarioSelector h1 {
+  margin: 0 0 10px;
+  text-align: center;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+#scenarioSelector > p {
+  margin: 0 0 28px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+#scenarioSelector .scenarioGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 320px));
+  gap: 18px;
+}
+
+#scenarioSelector .scenarioCard {
+  box-sizing: border-box;
+  min-height: 184px;
+  padding: 20px;
+  border: 1px solid rgba(22, 35, 42, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 42px rgba(42, 57, 66, 0.16);
+}
+
+#scenarioSelector .scenarioCard h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+#scenarioSelector .scenarioCard p {
+  min-height: 42px;
+  margin: 0 0 20px;
+  color: #3f4e56;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+#scenarioSelector .scenarioCard button {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: #2f7d5c;
+  color: #ffffff;
+  font: 700 15px Arial, Helvetica, sans-serif;
+  cursor: pointer;
+  padding: 0 12px;
+}
+
+#scenarioSelector .scenarioCard button:hover {
+  background: #358c68;
+}
+
+@media (max-width: 640px) {
+  #scenarioSelector .scenarioGrid {
+    grid-template-columns: minmax(220px, 340px);
+  }
+}
+
 #explorationPanel {
   position: fixed;
   left: 24px;
