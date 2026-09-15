@@ -22,7 +22,7 @@ const SPACE_AMBIENT_LAYERS: AmbientSoundLayer[] = [
   {
     id: "stationHum",
     assetPath: AUDIO_ASSETS.space.ambient.stationHum,
-    volume: 0.56
+    volume: 1
   }
 ];
 
@@ -337,6 +337,8 @@ export class SpaceStationScene {
   }
 
   private handleExplorationKeyDown(event: KeyboardEvent): void {
+    this.startStationAudio();
+
     if (
       this.evaluationStarted ||
       event.code !== "KeyQ" ||

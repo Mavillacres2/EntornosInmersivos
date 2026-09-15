@@ -386,6 +386,8 @@ export class ClassroomScene {
   }
 
   private handleExplorationKeyDown(event: KeyboardEvent): void {
+    this.startExplorationAudio();
+
     if (
       this.evaluationStarted ||
       event.code !== "KeyQ" ||

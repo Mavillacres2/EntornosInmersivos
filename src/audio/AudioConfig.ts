@@ -3,14 +3,14 @@ const AMBIENT_AUDIO_ROOT = `${AUDIO_ASSET_ROOT}/ambient`;
 const SPACE_AUDIO_ROOT = `${AUDIO_ASSET_ROOT}/space`;
 
 export const AUDIO_CONFIG = {
-  ambientVolume: 0.14,
-  baselineAmbientVolume: 0.06,
-  distractorVolume: 0.16,
-  stimulusCueVolume: 0.045,
-  responseCueVolume: 0.04,
+  ambientVolume: 0.42,
+  baselineAmbientVolume: 0.18,
+  distractorVolume: 0.34,
+  stimulusCueVolume: 0.12,
+  responseCueVolume: 0.1,
   spatialMaxDistance: 12,
-  spatialRefDistance: 1.2,
-  spatialRolloffFactor: 1.1
+  spatialRefDistance: 1.8,
+  spatialRolloffFactor: 0.65
 } as const;
 
 export interface AudioAssetCatalog {

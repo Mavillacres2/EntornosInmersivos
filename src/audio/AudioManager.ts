@@ -455,10 +455,10 @@ export class AudioManager {
       ? this.createSpatialOutput(
           audioContext,
           new Vector3(-8.5, 2.3, -1.1),
-          layer.volume ?? 0.45,
+          layer.volume ?? 0.72,
           "ambient"
         )
-      : this.createOutput(audioContext, layer.volume ?? 0.65, "ambient");
+      : this.createOutput(audioContext, layer.volume ?? 0.95, "ambient");
 
     source.connect(output.input);
     source.start();
