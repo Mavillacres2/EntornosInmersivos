@@ -50,6 +50,7 @@ interface BoxOptions {
   receivesShadow?: boolean;
   collides?: boolean;
   dynamic?: boolean;
+  hideDuringEvaluation?: boolean;
   rotationX?: number;
   rotationY?: number;
   rotationZ?: number;
@@ -75,6 +76,7 @@ export interface SpaceStationBuildResult {
   distractorAnchors: SpaceStationDistractorAnchors;
   cameraBounds: CameraBounds;
   collisionMeshes: Mesh[];
+  evaluationHiddenMeshes: Mesh[];
   shadowCasters: Mesh[];
   shadowReceivers: Mesh[];
   shadowLight: DirectionalLight;
@@ -101,6 +103,7 @@ export class SpaceStationBuilder {
   private readonly shadowCasters: Mesh[] = [];
   private readonly shadowReceivers: Mesh[] = [];
   private readonly collisionMeshes: Mesh[] = [];
+  private readonly evaluationHiddenMeshes: Mesh[] = [];
   private readonly windowGlassX = -5.20;
   private readonly windowBackdropX = -7.68;
   private readonly outsideWindowX = -7.02;
@@ -132,13 +135,14 @@ export class SpaceStationBuilder {
     this.createDoor();
     this.createCeilingLights();
     this.createDecorations();
+    this.createAdditionalStationDetails();
     const anchors = this.createAnchors();
 
     return {
       explorationEyePosition: new Vector3(0, 1.52, -5.6),
       explorationLookAt: new Vector3(0, 2.15, 3.8),
-      evaluationEyePosition: new Vector3(0, 1.28, -0.96),
-      evaluationLookAt: new Vector3(0, 2.48, 5.55),
+      evaluationEyePosition: new Vector3(0, 1.48, -1.46),
+      evaluationLookAt: new Vector3(0, 2.52, 5.55),
       cptScreenMesh,
       cptScreenAnchor: anchors.cptScreenAnchor,
       evaluationSeatAnchor: anchors.evaluationSeatAnchor,
@@ -157,6 +161,7 @@ export class SpaceStationBuilder {
         maxZ: 5.05
       },
       collisionMeshes: [...this.collisionMeshes],
+      evaluationHiddenMeshes: [...this.evaluationHiddenMeshes],
       shadowCasters: [...this.shadowCasters],
       shadowReceivers: [...this.shadowReceivers],
       shadowLight,
@@ -625,12 +630,12 @@ export class SpaceStationBuilder {
 
     this.createConsoleMiniScreen(
       "leftConsoleOrbitScreen",
-      new Vector3(-1.52, 1.27, 1.2),
+      new Vector3(-1.52, 1.2, 1.2),
       "orbit"
     );
     this.createConsoleMiniScreen(
       "rightConsoleWaveScreen",
-      new Vector3(1.52, 1.27, 1.2),
+      new Vector3(1.52, 1.2, 1.2),
       "wave"
     );
 
@@ -646,11 +651,12 @@ export class SpaceStationBuilder {
       this.createBox({
         name: `cptConsoleSoftButton${index + 1}`,
         width: 0.28,
-        height: 0.04,
-        depth: 0.2,
-        position: new Vector3(button.x, 1.26, button.z),
+        height: 0.025,
+        depth: 0.16,
+        position: new Vector3(button.x, 1.12, button.z),
         material: button.material,
-        castsShadow: true
+        castsShadow: true,
+        hideDuringEvaluation: true
       });
     });
 
@@ -667,11 +673,13 @@ export class SpaceStationBuilder {
       this.createBox({
         name: `consolePulseIndicator${index + 1}`,
         width: 0.14,
-        height: 0.035,
+        height: 0.022,
         depth: 0.14,
-        position: new Vector3(xPosition, 1.29, 1.74),
+        position: new Vector3(xPosition, 1.31, 1.72),
         material,
-        dynamic: true
+        dynamic: true,
+        rotationX: -0.22,
+        hideDuringEvaluation: true
       });
     });
 
@@ -717,12 +725,13 @@ export class SpaceStationBuilder {
     this.createBox({
       name,
       width: 0.94,
-      height: 0.035,
+      height: 0.024,
       depth: 0.42,
       position,
       material,
       castsShadow: true,
-      rotationX: -0.22
+      rotationX: -0.22,
+      hideDuringEvaluation: true
     });
   }
 
@@ -1410,6 +1419,396 @@ export class SpaceStationBuilder {
     this.createSmallPlant(new Vector3(-2.78, 1.22, 1.75));
     this.createSmallPlant(new Vector3(4.82, 1.34, -5.22));
     this.createDecorativeRobot();
+  }
+
+  private createAdditionalStationDetails(): void {
+    this.createRightWallStorageBay();
+    this.createBackSupplyArea();
+    this.createConsoleLooseEquipment();
+    this.createFloorCableRuns();
+    this.createMaintenanceToolRack();
+    this.createSpecimenStation();
+    this.createWallAccentPanels();
+  }
+
+  private createRightWallStorageBay(): void {
+    this.createBox({
+      name: "rightWallStorageBackPanel",
+      width: 0.08,
+      height: 1.42,
+      depth: 2.2,
+      position: new Vector3(5.68, 1.08, -0.72),
+      material: this.materials.panel,
+      castsShadow: true
+    });
+
+    [0.52, 0.92, 1.32].forEach((yPosition, index) => {
+      this.createBox({
+        name: `rightWallStorageShelf${index + 1}`,
+        width: 0.52,
+        height: 0.08,
+        depth: 2.12,
+        position: new Vector3(5.42, yPosition, -0.72),
+        material: this.materials.metal,
+        castsShadow: true
+      });
+    });
+
+    [-1.7, -0.92, -0.14, 0.62].forEach((zPosition, index) => {
+      this.createBox({
+        name: `rightWallSupplyBin${index + 1}`,
+        width: 0.34,
+        height: 0.24,
+        depth: 0.44,
+        position: new Vector3(5.28, 0.66 + (index % 2) * 0.42, zPosition),
+        material:
+          index % 3 === 0
+            ? this.materials.accentAmber
+            : index % 3 === 1
+            ? this.materials.accentGreen
+            : this.materials.accentBlue,
+        castsShadow: true
+      });
+    });
+
+    this.createBox({
+      name: "rightWallMedKit",
+      width: 0.18,
+      height: 0.42,
+      depth: 0.58,
+      position: new Vector3(5.36, 1.55, 0.34),
+      material: this.materials.posterPaper,
+      castsShadow: true
+    });
+  }
+
+  private createBackSupplyArea(): void {
+    this.createSupplyCrate(
+      "backLeftCargoCrate",
+      new Vector3(-3.48, 0, -7.05),
+      this.materials.accentBlue,
+      0.12,
+      1
+    );
+    this.createSupplyCrate(
+      "backMiddleCargoCrate",
+      new Vector3(-2.72, 0.36, -7.08),
+      this.materials.accentAmber,
+      -0.08,
+      0.78
+    );
+    this.createSupplyCrate(
+      "backRightCargoCrate",
+      new Vector3(3.48, 0, -7.02),
+      this.materials.accentGreen,
+      -0.16,
+      0.92
+    );
+
+    this.createOxygenTank("leftOxygenTank", new Vector3(-4.85, 0, -6.72), 0.98);
+    this.createOxygenTank("rightOxygenTank", new Vector3(4.88, 0, -6.72), 0.92);
+  }
+
+  private createConsoleLooseEquipment(): void {
+    this.createDataTablet(
+      "leftConsoleLooseTablet",
+      new Vector3(-1.72, 1.13, 0.38),
+      -0.28,
+      this.materials.accentCyan
+    );
+    this.createDataTablet(
+      "rightConsoleLooseTablet",
+      new Vector3(1.68, 1.13, 0.42),
+      0.32,
+      this.materials.accentAmber
+    );
+
+    this.createBox({
+      name: "consoleNotebookPad",
+      width: 0.7,
+      height: 0.025,
+      depth: 0.44,
+      position: new Vector3(0.8, 1.13, 0.44),
+      material: this.materials.posterPaper,
+      castsShadow: true,
+      rotationY: -0.18,
+      hideDuringEvaluation: true
+    });
+
+    this.createBox({
+      name: "consoleStylus",
+      width: 0.05,
+      height: 0.025,
+      depth: 0.52,
+      position: new Vector3(0.22, 1.15, 0.58),
+      material: this.materials.accentAmber,
+      castsShadow: true,
+      rotationY: 0.54,
+      hideDuringEvaluation: true
+    });
+  }
+
+  private createFloorCableRuns(): void {
+    this.createBox({
+      name: "floorCableRunToWindow",
+      width: 0.075,
+      height: 0.025,
+      depth: 4.4,
+      position: new Vector3(-2.32, 0.055, -1.58),
+      material: this.materials.trim,
+      rotationY: -0.28
+    });
+
+    this.createBox({
+      name: "floorCyanCableRunToConsole",
+      width: 3.0,
+      height: 0.028,
+      depth: 0.07,
+      position: new Vector3(2.58, 0.06, -2.95),
+      material: this.materials.accentCyan,
+      rotationY: 0.1
+    });
+
+    this.createBox({
+      name: "floorCableConnector",
+      width: 0.34,
+      height: 0.06,
+      depth: 0.2,
+      position: new Vector3(1.22, 0.08, -2.84),
+      material: this.materials.metal,
+      castsShadow: true,
+      rotationY: 0.1
+    });
+  }
+
+  private createMaintenanceToolRack(): void {
+    this.createBox({
+      name: "maintenanceRackBackPlate",
+      width: 0.07,
+      height: 0.95,
+      depth: 1.18,
+      position: new Vector3(5.72, 2.05, -4.28),
+      material: this.materials.panel,
+      castsShadow: true
+    });
+
+    [-0.38, 0, 0.38].forEach((zOffset, index) => {
+      this.createBox({
+        name: `maintenanceRackTool${index + 1}`,
+        width: 0.08,
+        height: 0.58 - index * 0.07,
+        depth: 0.06,
+        position: new Vector3(5.64, 2.02, -4.28 + zOffset),
+        material: index === 1 ? this.materials.accentAmber : this.materials.metal,
+        castsShadow: true,
+        rotationZ: index === 0 ? -0.22 : index === 2 ? 0.2 : 0
+      });
+    });
+
+    this.createBox({
+      name: "maintenanceRackHandle",
+      width: 0.08,
+      height: 0.1,
+      depth: 0.92,
+      position: new Vector3(5.62, 1.62, -4.28),
+      material: this.materials.accentCyan,
+      castsShadow: true
+    });
+  }
+
+  private createSpecimenStation(): void {
+    this.createBox({
+      name: "specimenStationTable",
+      width: 1.58,
+      height: 0.16,
+      depth: 0.76,
+      position: new Vector3(-4.72, 1.0, 2.85),
+      material: this.materials.metal,
+      castsShadow: true
+    });
+
+    [-0.48, 0, 0.48].forEach((zOffset, index) => {
+      this.createSpecimenTube(
+        `specimenTube${index + 1}`,
+        new Vector3(-4.72, 1.32, 2.85 + zOffset),
+        index
+      );
+    });
+  }
+
+  private createWallAccentPanels(): void {
+    [
+      { y: 2.92, z: -1.8, material: this.materials.accentCyan },
+      { y: 2.44, z: -1.2, material: this.materials.accentAmber },
+      { y: 1.96, z: -0.62, material: this.materials.accentGreen }
+    ].forEach((panel, index) => {
+      this.createBox({
+        name: `rightWallSmallSignalPanel${index + 1}`,
+        width: 0.045,
+        height: 0.18,
+        depth: 0.52,
+        position: new Vector3(5.82, panel.y, panel.z),
+        material: panel.material,
+        castsShadow: true
+      });
+    });
+
+    [
+      { x: -4.1, y: 2.82, material: this.materials.accentBlue },
+      { x: -3.42, y: 2.42, material: this.materials.accentCyan },
+      { x: 3.22, y: 2.72, material: this.materials.accentAmber },
+      { x: 4.0, y: 2.36, material: this.materials.accentGreen }
+    ].forEach((panel, index) => {
+      this.createBox({
+        name: `backWallEquipmentPlate${index + 1}`,
+        width: 0.58,
+        height: 0.34,
+        depth: 0.045,
+        position: new Vector3(panel.x, panel.y, -7.52),
+        material: panel.material,
+        castsShadow: true
+      });
+    });
+  }
+
+  private createSupplyCrate(
+    name: string,
+    position: Vector3,
+    material: StandardMaterial,
+    rotationY: number,
+    scale: number
+  ): void {
+    this.createBox({
+      name: `${name}Body`,
+      width: 0.76 * scale,
+      height: 0.46 * scale,
+      depth: 0.56 * scale,
+      position: new Vector3(position.x, position.y + 0.23 * scale, position.z),
+      material,
+      castsShadow: true,
+      rotationY
+    });
+
+    this.createBox({
+      name: `${name}Latch`,
+      width: 0.18 * scale,
+      height: 0.1 * scale,
+      depth: 0.06 * scale,
+      position: new Vector3(
+        position.x,
+        position.y + 0.28 * scale,
+        position.z - 0.3 * scale
+      ),
+      material: this.materials.accentCyan,
+      castsShadow: true,
+      rotationY
+    });
+
+    this.createBox({
+      name: `${name}Strap`,
+      width: 0.08 * scale,
+      height: 0.5 * scale,
+      depth: 0.59 * scale,
+      position: new Vector3(position.x, position.y + 0.24 * scale, position.z),
+      material: this.materials.trim,
+      castsShadow: true,
+      rotationY
+    });
+  }
+
+  private createOxygenTank(name: string, position: Vector3, scale: number): void {
+    const tank = MeshBuilder.CreateCylinder(
+      `${name}Body`,
+      {
+        height: 1.1 * scale,
+        diameter: 0.24 * scale,
+        tessellation: 18
+      },
+      this.scene
+    );
+
+    tank.position = new Vector3(position.x, position.y + 0.58 * scale, position.z);
+    tank.rotation.z = 0.06;
+    tank.material = this.materials.accentCyan;
+    tank.isPickable = false;
+    this.shadowCasters.push(tank);
+
+    this.createBox({
+      name: `${name}Valve`,
+      width: 0.18 * scale,
+      height: 0.08 * scale,
+      depth: 0.16 * scale,
+      position: new Vector3(position.x, position.y + 1.18 * scale, position.z),
+      material: this.materials.accentAmber,
+      castsShadow: true
+    });
+  }
+
+  private createDataTablet(
+    name: string,
+    position: Vector3,
+    rotationY: number,
+    accentMaterial: StandardMaterial
+  ): void {
+    this.createBox({
+      name: `${name}Body`,
+      width: 0.58,
+      height: 0.024,
+      depth: 0.38,
+      position,
+      material: this.materials.panel,
+      castsShadow: true,
+      rotationY,
+      hideDuringEvaluation: true
+    });
+
+    this.createBox({
+      name: `${name}GlowLine`,
+      width: 0.38,
+      height: 0.014,
+      depth: 0.045,
+      position: new Vector3(position.x, position.y + 0.023, position.z - 0.08),
+      material: accentMaterial,
+      castsShadow: true,
+      rotationY,
+      hideDuringEvaluation: true
+    });
+  }
+
+  private createSpecimenTube(name: string, position: Vector3, index: number): void {
+    const tube = MeshBuilder.CreateCylinder(
+      `${name}Glass`,
+      {
+        height: 0.64,
+        diameter: 0.18,
+        tessellation: 20
+      },
+      this.scene
+    );
+
+    tube.position = position;
+    tube.material = this.materials.glass;
+    tube.isPickable = false;
+    this.shadowCasters.push(tube);
+
+    const sample = MeshBuilder.CreateSphere(
+      `${name}Sample`,
+      {
+        diameter: 0.14,
+        segments: 12
+      },
+      this.scene
+    );
+
+    sample.position = new Vector3(position.x, position.y - 0.04, position.z);
+    sample.material =
+      index === 0
+        ? this.materials.accentGreen
+        : index === 1
+        ? this.materials.accentAmber
+        : this.materials.accentBlue;
+    sample.isPickable = false;
+    this.shadowCasters.push(sample);
   }
 
   private createAnchors(): SpaceStationDistractorAnchors & {
@@ -2351,6 +2750,8 @@ export class SpaceStationBuilder {
     );
     const context = texture.getContext() as unknown as CanvasRenderingContext2D;
 
+    texture.uScale = -1;
+    texture.uOffset = 1;
     context.fillStyle = "#e4d7ac";
     context.fillRect(0, 0, 512, 512);
     context.strokeStyle = "#3d474d";
@@ -2382,16 +2783,20 @@ export class SpaceStationBuilder {
     material.specularColor = new Color3(0, 0, 0);
     material.backFaceCulling = false;
 
-    this.createBox({
+    const poster = MeshBuilder.CreatePlane(
       name,
-      width: 0.82,
-      height: 0.96,
-      depth: 0.035,
-      position,
-      material,
-      castsShadow: true,
-      rotationY
-    });
+      {
+        width: 0.82,
+        height: 0.96
+      },
+      this.scene
+    );
+
+    poster.position = position;
+    poster.rotation.y = rotationY;
+    poster.material = material;
+    poster.isPickable = false;
+    this.shadowCasters.push(poster);
   }
 
   private createSolarSystemMobile(position: Vector3): void {
@@ -2500,91 +2905,15 @@ export class SpaceStationBuilder {
 
   private createDecorativeRobot(): void {
     const root = new TransformNode("spaceRobotRoot", this.scene);
-    const eyeMaterial = this.createEmissiveMaterial(
-      "spaceRobotEyeMaterial",
-      new Color3(0.31, 0.76, 0.85),
-      0.72
-    );
 
     root.position = new Vector3(2.72, 0, -0.05);
     root.rotation.y = -0.38;
+    root.setEnabled(false);
     root.metadata = {
       dynamic: true,
-      role: "space-robot"
+      role: "space-robot-anchor"
     };
 
-    const body = MeshBuilder.CreateBox(
-      "spaceRobotBody",
-      {
-        width: 0.34,
-        height: 0.42,
-        depth: 0.24
-      },
-      this.scene
-    );
-
-    body.parent = root;
-    body.position.y = 0.58;
-    body.material = this.materials.robotBody;
-    body.isPickable = false;
-    body.metadata = { dynamic: true, role: "space-robot" };
-    this.shadowCasters.push(body);
-
-    const head = MeshBuilder.CreateBox(
-      "spaceRobotHead",
-      {
-        width: 0.42,
-        height: 0.28,
-        depth: 0.28
-      },
-      this.scene
-    );
-
-    head.parent = root;
-    head.position.y = 0.96;
-    head.material = this.materials.robotBody;
-    head.isPickable = false;
-    head.metadata = { dynamic: true, role: "space-robot" };
-    this.shadowCasters.push(head);
-
-    [-0.09, 0.09].forEach((xPosition, index) => {
-      const eye = MeshBuilder.CreateBox(
-        `spaceRobotEye${index + 1}`,
-        {
-          width: 0.06,
-          height: 0.035,
-          depth: 0.035
-        },
-        this.scene
-      );
-
-      eye.parent = root;
-      eye.position.set(xPosition, 0.98, -0.155);
-      eye.material = eyeMaterial;
-      eye.isPickable = false;
-      eye.metadata = { dynamic: true, role: "space-robot" };
-    });
-
-    [-0.26, 0.26].forEach((xPosition, index) => {
-      const arm = MeshBuilder.CreateCylinder(
-        `spaceRobotArm${index + 1}`,
-        {
-          height: 0.34,
-          diameter: 0.055,
-          tessellation: 8
-        },
-        this.scene
-      );
-
-      arm.parent = root;
-      arm.position.set(xPosition, 0.62, 0);
-      arm.rotation.z = xPosition > 0 ? -0.2 : 0.2;
-      arm.material = this.materials.metal;
-      arm.isPickable = false;
-      arm.metadata = { dynamic: true, role: "space-robot" };
-    });
-
-    this.consoleLightMaterials.push(eyeMaterial);
     this.robotRoot = root;
   }
 
@@ -2697,6 +3026,10 @@ export class SpaceStationBuilder {
     if (options.collides) {
       mesh.checkCollisions = true;
       this.collisionMeshes.push(mesh);
+    }
+
+    if (options.hideDuringEvaluation) {
+      this.evaluationHiddenMeshes.push(mesh);
     }
 
     return mesh;

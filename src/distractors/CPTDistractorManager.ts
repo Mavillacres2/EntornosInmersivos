@@ -57,8 +57,8 @@ export class CPTDistractorManager {
   private readonly visualSequence = [
     "satellitePass",
     "leftPanelFlash",
-    "robotPass",
     "asteroidPass",
+    "rightPanelFlash",
     "doorLight"
   ];
   private readonly auditorySequence: SpaceAudioDistractorId[] = [
@@ -70,7 +70,7 @@ export class CPTDistractorManager {
   ];
   private readonly combinedSequence = [
     "panelBeep",
-    "robotMotor",
+    "satelliteRadio",
     "doorMotion"
   ];
   private readonly visualIntervalsMs = [3_800, 5_200, 4_600, 5_800];
@@ -376,6 +376,30 @@ export class CPTDistractorManager {
         );
         return;
 
+      case "rightPanelFlash":
+        if (this.visualEffects) {
+          const startedAt = performance.now();
+          const durationMs = this.visualEffects.blinkSidePanel("right", 950);
+
+          this.emitEvent(
+            id,
+            "visual",
+            startedAt,
+            startedAt + durationMs,
+            this.anchors.rightPanelDistractorAnchor.position
+          );
+          return;
+        }
+
+        this.spawnPulseCue(
+          id,
+          this.anchors.rightPanelDistractorAnchor,
+          new Color3(0.34, 0.72, 0.95),
+          950,
+          0.42
+        );
+        return;
+
       case "doorLight":
       default:
         if (this.visualEffects) {
@@ -434,6 +458,24 @@ export class CPTDistractorManager {
         }
 
         this.playCombinedAudio("beep", this.anchors.rightPanelDistractorAnchor, id, 420);
+        return;
+
+      case "satelliteRadio":
+        if (this.visualEffects) {
+          this.visualEffects.playSatellitePass(6_600);
+        } else {
+          this.spawnMovingCue(
+            id,
+            this.anchors.windowDistractorAnchor,
+            new Vector3(0, 0.45, -1.9),
+            new Vector3(0, -0.2, 2.1),
+            new Color3(0.92, 0.84, 0.52),
+            2_100,
+            0.22
+          );
+        }
+
+        this.playCombinedAudio("radio", this.anchors.windowDistractorAnchor, id, 900);
         return;
 
       case "robotMotor":

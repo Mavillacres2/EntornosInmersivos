@@ -8,8 +8,9 @@ import {
 import type { Mesh, Observer, Scene } from "@babylonjs/core";
 
 const EXPLORATION_MOVE_SPEED = 3.4;
-const EVALUATION_YAW_LIMIT = Math.PI / 6;
-const EVALUATION_PITCH_LIMIT = 0.42;
+const DEFAULT_EVALUATION_FOV = 0.72;
+const DEFAULT_EVALUATION_YAW_LIMIT = Math.PI / 6;
+const DEFAULT_EVALUATION_PITCH_LIMIT = 0.42;
 
 export const CameraMode = {
   Exploration: "exploration",
@@ -34,6 +35,9 @@ interface CameraManagerOptions {
   evaluationTarget: Vector3;
   collisionMeshes: Mesh[];
   bounds: CameraBounds;
+  evaluationFov?: number;
+  evaluationYawLimit?: number;
+  evaluationPitchLimit?: number;
 }
 
 export class CameraManager {
@@ -43,6 +47,8 @@ export class CameraManager {
   private readonly evaluationCamera: UniversalCamera;
   private readonly evaluationPosition: Vector3;
   private readonly evaluationRotation: Vector3;
+  private readonly evaluationYawLimit: number;
+  private readonly evaluationPitchLimit: number;
   private readonly bounds: CameraBounds;
   private readonly explorationHeight: number;
   private readonly movementKeys = new Set<string>();
@@ -65,6 +71,10 @@ export class CameraManager {
     this.bounds = options.bounds;
     this.explorationHeight = options.explorationPosition.y;
     this.evaluationPosition = options.evaluationPosition.clone();
+    this.evaluationYawLimit =
+      options.evaluationYawLimit ?? DEFAULT_EVALUATION_YAW_LIMIT;
+    this.evaluationPitchLimit =
+      options.evaluationPitchLimit ?? DEFAULT_EVALUATION_PITCH_LIMIT;
 
     this.scene.collisionsEnabled = true;
     options.collisionMeshes.forEach((mesh) => {
@@ -77,7 +87,8 @@ export class CameraManager {
     );
     this.evaluationCamera = this.createEvaluationCamera(
       options.evaluationPosition,
-      options.evaluationTarget
+      options.evaluationTarget,
+      options.evaluationFov ?? DEFAULT_EVALUATION_FOV
     );
     this.evaluationRotation = this.evaluationCamera.rotation.clone();
 
@@ -229,7 +240,11 @@ export class CameraManager {
     return camera;
   }
 
-  private createEvaluationCamera(position: Vector3, target: Vector3): UniversalCamera {
+  private createEvaluationCamera(
+    position: Vector3,
+    target: Vector3,
+    fov: number
+  ): UniversalCamera {
     const camera = new UniversalCamera(
       "evaluationCamera",
       position.clone(),
@@ -237,7 +252,7 @@ export class CameraManager {
     );
 
     camera.setTarget(target);
-    camera.fov = 0.72;
+    camera.fov = fov;
     camera.minZ = 0.05;
     camera.maxZ = 100;
     camera.speed = 0;
@@ -385,12 +400,12 @@ export class CameraManager {
       this.evaluationCamera.rotation.y = this.clampAngleAroundBase(
         this.evaluationCamera.rotation.y,
         this.evaluationRotation.y,
-        EVALUATION_YAW_LIMIT
+        this.evaluationYawLimit
       );
       this.evaluationCamera.rotation.x = this.clamp(
         this.evaluationCamera.rotation.x,
-        this.evaluationRotation.x - EVALUATION_PITCH_LIMIT,
-        this.evaluationRotation.x + EVALUATION_PITCH_LIMIT
+        this.evaluationRotation.x - this.evaluationPitchLimit,
+        this.evaluationRotation.x + this.evaluationPitchLimit
       );
       this.evaluationCamera.rotation.z = this.evaluationRotation.z;
     });

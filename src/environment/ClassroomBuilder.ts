@@ -99,6 +99,7 @@ export class ClassroomBuilder {
     this.createForegroundEdgeFurniture();
     this.createShelf();
     this.createStorageFurniture();
+    this.createBackClassroomDetails();
     this.createWindows();
     this.createDoor();
     this.createWallDetails();
@@ -464,6 +465,13 @@ export class ClassroomBuilder {
         rotationY: desk.rotation,
         hideDuringEvaluation
       });
+      this.createDeskLearningSupplies(
+        `studentDesk${index + 1}`,
+        position,
+        desk.rotation,
+        index,
+        hideDuringEvaluation
+      );
 
       this.createChair(
         `studentChair${index + 1}`,
@@ -677,6 +685,680 @@ export class ClassroomBuilder {
         material: this.materials.metal,
         castsShadow: true
       });
+    });
+  }
+
+  private createBackClassroomDetails(): void {
+    this.createBackWallGallery();
+    this.createBackLowShelf(
+      "backLeftCubbies",
+      new Vector3(-6.35, 0, -9.42),
+      2.68,
+      [
+        this.materials.storageBlue,
+        this.materials.storageYellow,
+        this.materials.storageGreen
+      ]
+    );
+    this.createBackLowShelf(
+      "backRightToyShelf",
+      new Vector3(6.25, 0, -9.42),
+      2.36,
+      [
+        this.materials.storagePurple,
+        this.materials.accentOrange,
+        this.materials.accentSky
+      ]
+    );
+    this.createPlayRug();
+    this.createPottedPlant(
+      "backLeftPottedPlant",
+      new Vector3(-8.18, 0, -8.72),
+      0.98,
+      this.materials.accentOrange
+    );
+    this.createPottedPlant(
+      "backRightPottedPlant",
+      new Vector3(8.02, 0, -8.18),
+      0.82,
+      this.materials.storageYellow
+    );
+    this.createFloorBookScatter();
+    this.createToyScatter();
+    this.createBackpacks();
+  }
+
+  private createDeskLearningSupplies(
+    name: string,
+    position: Vector3,
+    rotationY: number,
+    index: number,
+    hideDuringEvaluation: boolean
+  ): void {
+    const paperX = index % 2 === 0 ? -0.32 : 0.28;
+    const paperZ = index % 3 === 0 ? -0.16 : 0.12;
+    const pencilX = index % 2 === 0 ? 0.34 : -0.28;
+    const pencilZ = index % 3 === 1 ? -0.18 : 0.08;
+
+    this.createBox({
+      name: `${name}LoosePaper`,
+      width: 0.56,
+      height: 0.018,
+      depth: 0.38,
+      position: this.positionFromLocalOffset(
+        position,
+        paperX,
+        0.855,
+        paperZ,
+        rotationY
+      ),
+      material: this.materials.paper,
+      castsShadow: true,
+      hideDuringEvaluation,
+      rotationY: rotationY + (index % 2 === 0 ? 0.12 : -0.1)
+    });
+
+    this.createBox({
+      name: `${name}Pencil`,
+      width: 0.05,
+      height: 0.032,
+      depth: 0.54,
+      position: this.positionFromLocalOffset(
+        position,
+        pencilX,
+        0.875,
+        pencilZ,
+        rotationY
+      ),
+      material: this.materials.pencil,
+      castsShadow: true,
+      hideDuringEvaluation,
+      rotationY: rotationY + 0.32 + index * 0.04
+    });
+
+    if (index % 2 === 0) {
+      this.createBox({
+        name: `${name}SmallBook`,
+        width: 0.46,
+        height: 0.055,
+        depth: 0.34,
+        position: this.positionFromLocalOffset(
+          position,
+          0.02,
+          0.895,
+          0.2,
+          rotationY
+        ),
+        material:
+          index % 4 === 0
+            ? this.materials.accentSky
+            : this.materials.storagePurple,
+        castsShadow: true,
+        hideDuringEvaluation,
+        rotationY: rotationY - 0.16
+      });
+    }
+  }
+
+  private createBackWallGallery(): void {
+    [
+      {
+        name: "backReadingPoster",
+        width: 1.22,
+        height: 0.82,
+        x: -3.65,
+        y: 3.26,
+        title: "LEER",
+        background: "#f4ead0",
+        accent: "#547b75",
+        secondary: "#c77f57"
+      },
+      {
+        name: "backColorsPoster",
+        width: 1.18,
+        height: 0.76,
+        x: -1.38,
+        y: 3.08,
+        title: "COLOR",
+        background: "#d8e6df",
+        accent: "#355f76",
+        secondary: "#d39d42"
+      },
+      {
+        name: "backGamesPoster",
+        width: 1.2,
+        height: 0.76,
+        x: 1.38,
+        y: 3.1,
+        title: "JUGAR",
+        background: "#f3d98b",
+        accent: "#6d8ea3",
+        secondary: "#bf6b45"
+      },
+      {
+        name: "backArtPoster",
+        width: 1.18,
+        height: 0.82,
+        x: 3.68,
+        y: 3.28,
+        title: "ARTE",
+        background: "#f2dfc2",
+        accent: "#5d7f8a",
+        secondary: "#c99a55"
+      }
+    ].forEach((poster) => {
+      this.createPoster({
+        name: poster.name,
+        width: poster.width,
+        height: poster.height,
+        position: new Vector3(poster.x, poster.y, -9.84),
+        rotationY: 0,
+        title: poster.title,
+        background: poster.background,
+        accent: poster.accent,
+        secondary: poster.secondary
+      });
+    });
+  }
+
+  private createBackLowShelf(
+    name: string,
+    position: Vector3,
+    width: number,
+    binMaterials: StandardMaterial[]
+  ): void {
+    this.createBox({
+      name: `${name}Back`,
+      width,
+      height: 1.18,
+      depth: 0.08,
+      position: new Vector3(position.x, 0.78, position.z - 0.34),
+      material: this.materials.shelf,
+      castsShadow: true,
+      collides: true
+    });
+
+    this.createBox({
+      name: `${name}Top`,
+      width,
+      height: 0.1,
+      depth: 0.74,
+      position: new Vector3(position.x, 1.38, position.z),
+      material: this.materials.wood,
+      castsShadow: true,
+      collides: true
+    });
+
+    this.createBox({
+      name: `${name}Bottom`,
+      width,
+      height: 0.1,
+      depth: 0.74,
+      position: new Vector3(position.x, 0.18, position.z),
+      material: this.materials.wood,
+      castsShadow: true,
+      collides: true
+    });
+
+    [-width / 2 + 0.05, width / 2 - 0.05].forEach((xOffset, index) => {
+      this.createBox({
+        name: `${name}Side${index + 1}`,
+        width: 0.1,
+        height: 1.2,
+        depth: 0.74,
+        position: new Vector3(position.x + xOffset, 0.78, position.z),
+        material: this.materials.shelf,
+        castsShadow: true,
+        collides: true
+      });
+    });
+
+    [-0.33, 0.33].forEach((xOffset, index) => {
+      this.createBox({
+        name: `${name}Divider${index + 1}`,
+        width: 0.08,
+        height: 1.1,
+        depth: 0.66,
+        position: new Vector3(position.x + xOffset * width, 0.78, position.z),
+        material: this.materials.shelf,
+        castsShadow: true
+      });
+    });
+
+    [-0.34, 0.04, 0.42].forEach((zOffset, rowIndex) => {
+      [-0.34, 0, 0.34].forEach((xFactor, columnIndex) => {
+        const itemIndex = rowIndex * 3 + columnIndex;
+
+        this.createBox({
+          name: `${name}Bin${itemIndex + 1}`,
+          width: width * 0.24,
+          height: 0.28,
+          depth: 0.28,
+          position: new Vector3(
+            position.x + xFactor * width,
+            0.46 + rowIndex * 0.34,
+            position.z + zOffset
+          ),
+          material: binMaterials[itemIndex % binMaterials.length],
+          castsShadow: true
+        });
+      });
+    });
+
+    this.createStackedBooks(
+      `${name}TopBooks`,
+      new Vector3(position.x - width * 0.24, 1.5, position.z + 0.06),
+      0.08
+    );
+  }
+
+  private createPlayRug(): void {
+    this.createBox({
+      name: "backPlayRug",
+      width: 3.15,
+      height: 0.025,
+      depth: 1.85,
+      position: new Vector3(-2.2, 0.035, -8.22),
+      material: this.materials.storageGreen,
+      receivesShadow: true,
+      rotationY: -0.06
+    });
+
+    [
+      { x: -3.34, z: -8.62, material: this.materials.accentSky },
+      { x: -2.58, z: -7.85, material: this.materials.posterPaper },
+      { x: -1.88, z: -8.46, material: this.materials.storageYellow },
+      { x: -1.1, z: -7.8, material: this.materials.storagePurple }
+    ].forEach((square, index) => {
+      this.createBox({
+        name: `backPlayRugPatch${index + 1}`,
+        width: 0.52,
+        height: 0.03,
+        depth: 0.46,
+        position: new Vector3(square.x, 0.055, square.z),
+        material: square.material,
+        receivesShadow: true,
+        rotationY: index % 2 === 0 ? -0.06 : 0.04
+      });
+    });
+  }
+
+  private createPottedPlant(
+    name: string,
+    position: Vector3,
+    scale: number,
+    potMaterial: StandardMaterial
+  ): void {
+    const pot = MeshBuilder.CreateCylinder(
+      `${name}Pot`,
+      {
+        height: 0.42 * scale,
+        diameterTop: 0.5 * scale,
+        diameterBottom: 0.38 * scale,
+        tessellation: 14
+      },
+      this.scene
+    );
+
+    pot.position = new Vector3(position.x, 0.21 * scale, position.z);
+    pot.material = potMaterial;
+    pot.isPickable = false;
+    this.shadowCasters.push(pot);
+
+    const soil = MeshBuilder.CreateCylinder(
+      `${name}Soil`,
+      {
+        height: 0.035 * scale,
+        diameter: 0.43 * scale,
+        tessellation: 14
+      },
+      this.scene
+    );
+
+    soil.position = new Vector3(position.x, 0.43 * scale, position.z);
+    soil.material = this.materials.darkTrim;
+    soil.isPickable = false;
+    this.shadowCasters.push(soil);
+
+    const stem = MeshBuilder.CreateCylinder(
+      `${name}Stem`,
+      {
+        height: 0.82 * scale,
+        diameter: 0.055 * scale,
+        tessellation: 8
+      },
+      this.scene
+    );
+
+    stem.position = new Vector3(position.x, 0.82 * scale, position.z);
+    stem.material = this.materials.treeTrunk;
+    stem.isPickable = false;
+    this.shadowCasters.push(stem);
+
+    [
+      { x: -0.18, y: 1.18, z: 0, sx: 0.9, sy: 0.55, sz: 0.38 },
+      { x: 0.18, y: 1.24, z: 0.03, sx: 0.82, sy: 0.56, sz: 0.36 },
+      { x: 0, y: 1.4, z: -0.08, sx: 0.72, sy: 0.52, sz: 0.34 }
+    ].forEach((leafData, index) => {
+      const leaf = MeshBuilder.CreateSphere(
+        `${name}Leaf${index + 1}`,
+        {
+          diameter: 0.48 * scale,
+          segments: 12
+        },
+        this.scene
+      );
+
+      leaf.position = new Vector3(
+        position.x + leafData.x * scale,
+        leafData.y * scale,
+        position.z + leafData.z * scale
+      );
+      leaf.scaling.set(leafData.sx, leafData.sy, leafData.sz);
+      leaf.material = this.materials.treeLeaves;
+      leaf.isPickable = false;
+      this.shadowCasters.push(leaf);
+    });
+  }
+
+  private createFloorBookScatter(): void {
+    const books = [
+      { x: -5.25, z: -7.48, width: 0.62, depth: 0.42, rot: 0.32, material: this.materials.accentSky },
+      { x: -4.72, z: -8.12, width: 0.54, depth: 0.36, rot: -0.22, material: this.materials.posterPaper },
+      { x: -0.38, z: -8.72, width: 0.58, depth: 0.4, rot: 0.54, material: this.materials.accentOrange },
+      { x: 1.04, z: -7.62, width: 0.5, depth: 0.34, rot: -0.48, material: this.materials.storagePurple },
+      { x: 5.12, z: -7.92, width: 0.66, depth: 0.38, rot: 0.18, material: this.materials.storageGreen },
+      { x: -7.25, z: -3.82, width: 0.52, depth: 0.34, rot: -0.38, material: this.materials.storageYellow },
+      { x: 6.72, z: -2.38, width: 0.58, depth: 0.36, rot: 0.42, material: this.materials.accentSky },
+      { x: -6.5, z: 0.92, width: 0.54, depth: 0.36, rot: 0.2, material: this.materials.storagePurple },
+      { x: 5.88, z: 2.88, width: 0.62, depth: 0.38, rot: -0.32, material: this.materials.posterPaper }
+    ];
+
+    books.forEach((book, index) => {
+      this.createBox({
+        name: `floorScatteredBook${index + 1}`,
+        width: book.width,
+        height: 0.055,
+        depth: book.depth,
+        position: new Vector3(book.x, 0.07, book.z),
+        material: book.material,
+        castsShadow: true,
+        rotationY: book.rot,
+        rotationZ: index % 2 === 0 ? 0.02 : -0.018
+      });
+
+      this.createBox({
+        name: `floorScatteredBookPages${index + 1}`,
+        width: book.width * 0.72,
+        height: 0.018,
+        depth: book.depth * 0.78,
+        position: new Vector3(book.x, 0.108, book.z),
+        material: this.materials.paper,
+        castsShadow: true,
+        rotationY: book.rot
+      });
+    });
+  }
+
+  private createToyScatter(): void {
+    [
+      { x: -2.86, z: -8.24, material: this.materials.accentCoral },
+      { x: -2.44, z: -8.58, material: this.materials.storageYellow },
+      { x: -1.74, z: -8.08, material: this.materials.accentSky },
+      { x: 4.62, z: -8.5, material: this.materials.storagePurple },
+      { x: -6.75, z: -5.55, material: this.materials.accentSky },
+      { x: -6.32, z: -4.98, material: this.materials.storageGreen },
+      { x: 6.38, z: -4.35, material: this.materials.storageYellow },
+      { x: 6.86, z: -3.86, material: this.materials.accentCoral },
+      { x: -7.05, z: -1.58, material: this.materials.storagePurple },
+      { x: 7.1, z: 0.72, material: this.materials.accentSky },
+      { x: -5.9, z: 2.28, material: this.materials.storageYellow },
+      { x: 5.56, z: 3.36, material: this.materials.storageGreen }
+    ].forEach((block, index) => {
+      this.createBox({
+        name: `floorToyBlock${index + 1}`,
+        width: 0.24,
+        height: 0.24,
+        depth: 0.24,
+        position: new Vector3(block.x, 0.14, block.z),
+        material: block.material,
+        castsShadow: true,
+        rotationY: index * 0.32
+      });
+    });
+
+    const ball = MeshBuilder.CreateSphere(
+      "floorToyBall",
+      {
+        diameter: 0.36,
+        segments: 16
+      },
+      this.scene
+    );
+
+    ball.position = new Vector3(2.18, 0.2, -8.26);
+    ball.material = this.materials.accentCoral;
+    ball.isPickable = false;
+    this.shadowCasters.push(ball);
+
+    const sideBall = MeshBuilder.CreateSphere(
+      "sideFloorToyBall",
+      {
+        diameter: 0.3,
+        segments: 14
+      },
+      this.scene
+    );
+
+    sideBall.position = new Vector3(-6.52, 0.17, -1.1);
+    sideBall.material = this.materials.storageYellow;
+    sideBall.isPickable = false;
+    this.shadowCasters.push(sideBall);
+
+    const ring = MeshBuilder.CreateTorus(
+      "floorToyRing",
+      {
+        diameter: 0.46,
+        thickness: 0.045,
+        tessellation: 18
+      },
+      this.scene
+    );
+
+    ring.position = new Vector3(-1.25, 0.08, -8.72);
+    ring.rotation.x = Math.PI / 2;
+    ring.rotation.z = 0.32;
+    ring.material = this.materials.accentSky;
+    ring.isPickable = false;
+    this.shadowCasters.push(ring);
+
+    const sideRing = MeshBuilder.CreateTorus(
+      "sideFloorToyRing",
+      {
+        diameter: 0.42,
+        thickness: 0.04,
+        tessellation: 18
+      },
+      this.scene
+    );
+
+    sideRing.position = new Vector3(6.38, 0.08, -0.62);
+    sideRing.rotation.x = Math.PI / 2;
+    sideRing.rotation.z = -0.26;
+    sideRing.material = this.materials.accentOrange;
+    sideRing.isPickable = false;
+    this.shadowCasters.push(sideRing);
+
+    this.createToyCar("backFloorToyCar", new Vector3(3.55, 0, -7.55), -0.24);
+    this.createToyCar("sideFloorToyCar", new Vector3(-6.15, 0, 1.42), 0.34);
+    this.createFloorGameBoard("backFloorGameBoard", new Vector3(-3.05, 0, -7.92), -0.08);
+    this.createFloorGameBoard("rightFloorGameBoard", new Vector3(6.34, 0, 1.82), 0.18);
+  }
+
+  private createToyCar(name: string, position: Vector3, rotationY: number): void {
+    this.createBox({
+      name: `${name}Body`,
+      width: 0.54,
+      height: 0.16,
+      depth: 0.28,
+      position: new Vector3(position.x, 0.14, position.z),
+      material: this.materials.storageBlue,
+      castsShadow: true,
+      rotationY
+    });
+
+    this.createBox({
+      name: `${name}Top`,
+      width: 0.3,
+      height: 0.14,
+      depth: 0.22,
+      position: this.positionFromLocalOffset(position, 0.02, 0.29, -0.02, rotationY),
+      material: this.materials.storageYellow,
+      castsShadow: true,
+      rotationY
+    });
+
+    [-0.2, 0.2].forEach((xOffset, index) => {
+      [-0.15, 0.15].forEach((zOffset, wheelIndex) => {
+        const wheel = MeshBuilder.CreateCylinder(
+          `${name}Wheel${index + 1}${wheelIndex + 1}`,
+          {
+            height: 0.07,
+            diameter: 0.11,
+            tessellation: 10
+          },
+          this.scene
+        );
+
+        wheel.position = this.positionFromLocalOffset(
+          position,
+          xOffset,
+          0.08,
+          zOffset,
+          rotationY
+        );
+        wheel.rotation.z = Math.PI / 2;
+        wheel.rotation.y = rotationY;
+        wheel.material = this.materials.darkTrim;
+        wheel.isPickable = false;
+        this.shadowCasters.push(wheel);
+      });
+    });
+  }
+
+  private createFloorGameBoard(
+    name: string,
+    position: Vector3,
+    rotationY: number
+  ): void {
+    this.createBox({
+      name: `${name}Base`,
+      width: 0.86,
+      height: 0.025,
+      depth: 0.62,
+      position: new Vector3(position.x, 0.052, position.z),
+      material: this.materials.paper,
+      receivesShadow: true,
+      rotationY
+    });
+
+    [
+      { x: -0.24, z: -0.18, material: this.materials.accentCoral },
+      { x: 0.02, z: -0.16, material: this.materials.storageYellow },
+      { x: 0.26, z: -0.18, material: this.materials.accentSky },
+      { x: -0.12, z: 0.12, material: this.materials.storageGreen },
+      { x: 0.18, z: 0.14, material: this.materials.storagePurple }
+    ].forEach((piece, index) => {
+      this.createBox({
+        name: `${name}Piece${index + 1}`,
+        width: 0.15,
+        height: 0.08,
+        depth: 0.15,
+        position: this.positionFromLocalOffset(
+          position,
+          piece.x,
+          0.12,
+          piece.z,
+          rotationY
+        ),
+        material: piece.material,
+        castsShadow: true,
+        rotationY: rotationY + index * 0.24
+      });
+    });
+  }
+
+  private createBackpacks(): void {
+    this.createBackpack(
+      "backLeftBackpack",
+      new Vector3(-6.95, 0, -7.62),
+      this.materials.storagePurple,
+      0.34
+    );
+    this.createBackpack(
+      "backMiddleBackpack",
+      new Vector3(0.26, 0, -8.0),
+      this.materials.accentSky,
+      -0.42
+    );
+    this.createBackpack(
+      "backRightBackpack",
+      new Vector3(6.88, 0, -7.42),
+      this.materials.accentCoral,
+      0.18
+    );
+  }
+
+  private createBackpack(
+    name: string,
+    position: Vector3,
+    material: StandardMaterial,
+    rotationY: number
+  ): void {
+    this.createBox({
+      name: `${name}Body`,
+      width: 0.46,
+      height: 0.62,
+      depth: 0.24,
+      position: new Vector3(position.x, 0.34, position.z),
+      material,
+      castsShadow: true,
+      rotationY
+    });
+
+    this.createBox({
+      name: `${name}FrontPocket`,
+      width: 0.32,
+      height: 0.24,
+      depth: 0.04,
+      position: this.positionFromLocalOffset(position, 0, 0.28, -0.145, rotationY),
+      material: this.materials.posterPaper,
+      castsShadow: true,
+      rotationY
+    });
+
+    [-0.16, 0.16].forEach((xOffset, index) => {
+      this.createBox({
+        name: `${name}Strap${index + 1}`,
+        width: 0.055,
+        height: 0.48,
+        depth: 0.035,
+        position: this.positionFromLocalOffset(position, xOffset, 0.42, 0.14, rotationY),
+        material: this.materials.darkTrim,
+        castsShadow: true,
+        rotationY
+      });
+    });
+
+    this.createBox({
+      name: `${name}Handle`,
+      width: 0.24,
+      height: 0.055,
+      depth: 0.055,
+      position: new Vector3(position.x, 0.69, position.z),
+      material: this.materials.darkTrim,
+      castsShadow: true,
+      rotationY
     });
   }
 
@@ -1287,6 +1969,8 @@ export class ClassroomBuilder {
     );
     const context = texture.getContext() as unknown as CanvasRenderingContext2D;
 
+    texture.uScale = -1;
+    texture.uOffset = 1;
     context.fillStyle = options.background;
     context.fillRect(0, 0, 512, 384);
     context.strokeStyle = "#c99a55";
