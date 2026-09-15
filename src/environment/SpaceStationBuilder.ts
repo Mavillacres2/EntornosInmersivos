@@ -2500,91 +2500,15 @@ export class SpaceStationBuilder {
 
   private createDecorativeRobot(): void {
     const root = new TransformNode("spaceRobotRoot", this.scene);
-    const eyeMaterial = this.createEmissiveMaterial(
-      "spaceRobotEyeMaterial",
-      new Color3(0.31, 0.76, 0.85),
-      0.72
-    );
 
     root.position = new Vector3(2.72, 0, -0.05);
     root.rotation.y = -0.38;
+    root.setEnabled(false);
     root.metadata = {
       dynamic: true,
-      role: "space-robot"
+      role: "space-robot-anchor"
     };
 
-    const body = MeshBuilder.CreateBox(
-      "spaceRobotBody",
-      {
-        width: 0.34,
-        height: 0.42,
-        depth: 0.24
-      },
-      this.scene
-    );
-
-    body.parent = root;
-    body.position.y = 0.58;
-    body.material = this.materials.robotBody;
-    body.isPickable = false;
-    body.metadata = { dynamic: true, role: "space-robot" };
-    this.shadowCasters.push(body);
-
-    const head = MeshBuilder.CreateBox(
-      "spaceRobotHead",
-      {
-        width: 0.42,
-        height: 0.28,
-        depth: 0.28
-      },
-      this.scene
-    );
-
-    head.parent = root;
-    head.position.y = 0.96;
-    head.material = this.materials.robotBody;
-    head.isPickable = false;
-    head.metadata = { dynamic: true, role: "space-robot" };
-    this.shadowCasters.push(head);
-
-    [-0.09, 0.09].forEach((xPosition, index) => {
-      const eye = MeshBuilder.CreateBox(
-        `spaceRobotEye${index + 1}`,
-        {
-          width: 0.06,
-          height: 0.035,
-          depth: 0.035
-        },
-        this.scene
-      );
-
-      eye.parent = root;
-      eye.position.set(xPosition, 0.98, -0.155);
-      eye.material = eyeMaterial;
-      eye.isPickable = false;
-      eye.metadata = { dynamic: true, role: "space-robot" };
-    });
-
-    [-0.26, 0.26].forEach((xPosition, index) => {
-      const arm = MeshBuilder.CreateCylinder(
-        `spaceRobotArm${index + 1}`,
-        {
-          height: 0.34,
-          diameter: 0.055,
-          tessellation: 8
-        },
-        this.scene
-      );
-
-      arm.parent = root;
-      arm.position.set(xPosition, 0.62, 0);
-      arm.rotation.z = xPosition > 0 ? -0.2 : 0.2;
-      arm.material = this.materials.metal;
-      arm.isPickable = false;
-      arm.metadata = { dynamic: true, role: "space-robot" };
-    });
-
-    this.consoleLightMaterials.push(eyeMaterial);
     this.robotRoot = root;
   }
 

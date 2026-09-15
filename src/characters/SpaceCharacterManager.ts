@@ -2,7 +2,8 @@ import {
   Color3,
   MeshBuilder,
   StandardMaterial,
-  TransformNode
+  TransformNode,
+  Vector3
 } from "@babylonjs/core";
 import type {
   AbstractMesh,
@@ -21,11 +22,13 @@ interface ManagedSpaceCharacter {
   meshes: AbstractMesh[];
   materials: StandardMaterial[];
   container: AssetContainer | null;
+  config: SpaceCharacterConfig;
 }
 
 export class SpaceCharacterManager {
   private readonly scene: Scene;
   private readonly characters: ManagedSpaceCharacter[] = [];
+  private activityParticipantTarget: Vector3 | null = null;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -36,7 +39,15 @@ export class SpaceCharacterManager {
       const character = await this.createCharacter(config);
 
       this.characters.push(character);
+      this.applyActivityParticipantLook(character);
     }
+  }
+
+  lookAtActivityParticipant(target: Vector3): void {
+    this.activityParticipantTarget = target.clone();
+    this.characters.forEach((character) => {
+      this.applyActivityParticipantLook(character);
+    });
   }
 
   dispose(): void {
@@ -53,50 +64,100 @@ export class SpaceCharacterManager {
   private async createCharacter(
     config: SpaceCharacterConfig
   ): Promise<ManagedSpaceCharacter> {
+    const modelUrl = await this.resolveModelUrl(config);
+
+    if (!modelUrl) {
+      console.warn(
+        `No se encontro un modelo GLB para ${config.id}. Se usara placeholder hasta que agregues el archivo.`
+      );
+      return this.createFallbackCharacter(config);
+    }
+
     try {
-      return await this.loadGlbCharacter(config);
+      return await this.loadGlbCharacter(config, modelUrl);
     } catch (error: unknown) {
       console.warn(
-        `No se pudo cargar ${config.modelUrl}. Se usara placeholder.`,
+        `No se pudo cargar ${modelUrl}. Se usara placeholder.`,
         error
       );
       return this.createFallbackCharacter(config);
     }
   }
 
+  private async resolveModelUrl(config: SpaceCharacterConfig): Promise<string | null> {
+    const candidates = [
+      config.modelUrl,
+      ...(config.modelUrlCandidates ?? [])
+    ].filter((candidate, index, allCandidates) =>
+      Boolean(candidate) && allCandidates.indexOf(candidate) === index
+    );
+
+    for (const candidate of candidates) {
+      if (await this.modelExists(candidate)) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  private async modelExists(modelUrl: string): Promise<boolean> {
+    try {
+      const response = await fetch(modelUrl, {
+        method: "HEAD"
+      });
+
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
   private async loadGlbCharacter(
-    config: SpaceCharacterConfig
+    config: SpaceCharacterConfig,
+    modelUrl: string
   ): Promise<ManagedSpaceCharacter> {
-    const container = await LoadAssetContainerAsync(config.modelUrl, this.scene);
+    const container = await LoadAssetContainerAsync(modelUrl, this.scene);
     const root = new TransformNode(`${config.id}Root`, this.scene);
 
     container.animationGroups.forEach((animationGroup) => {
       animationGroup.stop();
     });
     container.addAllToScene();
+    container.transformNodes.forEach((node) => {
+      if (!node.parent) {
+        node.parent = root;
+      }
+    });
     container.meshes.forEach((mesh) => {
       if (!mesh.parent) {
         mesh.parent = root;
       }
 
-      mesh.isPickable = false;
-      mesh.checkCollisions = false;
+      this.prepareImportedMesh(mesh);
     });
+    this.hideImportedScenePropMeshes(container.meshes);
 
-    root.position = config.position.clone();
-    root.rotation.y = config.rotationY;
-    root.scaling.setAll(config.scaling);
+    root.position.copyFrom(config.position);
+    root.rotation.y = this.getConfiguredRotationY(config);
+    root.scaling.setAll(1);
     root.metadata = {
       role: "space-character",
       id: config.id,
-      label: config.label
+      label: config.label,
+      source: modelUrl
     };
+    this.normalizeImportedCharacterHeight(root, config.targetHeight);
+    root.scaling.scaleInPlace(config.scaling);
+    this.centerImportedCharacterOnRoot(root);
+    this.alignCharacterBottomToY(root, config.position.y);
 
     return {
       root,
       meshes: container.meshes,
       materials: [],
-      container
+      container,
+      config
     };
   }
 
@@ -214,7 +275,7 @@ export class SpaceCharacterManager {
     meshes.push(badge);
 
     root.position = config.position.clone();
-    root.rotation.y = config.rotationY;
+    root.rotation.y = this.getConfiguredRotationY(config);
     root.scaling.setAll(config.scaling);
     root.metadata = {
       role: "space-character-fallback",
@@ -231,8 +292,122 @@ export class SpaceCharacterManager {
       root,
       meshes,
       materials: [suitMaterial, visorMaterial, accentMaterial],
-      container: null
+      container: null,
+      config
     };
+  }
+
+  private applyActivityParticipantLook(character: ManagedSpaceCharacter): void {
+    if (!this.activityParticipantTarget || !character.config.facesActivityParticipant) {
+      return;
+    }
+
+    character.root.rotation.y =
+      this.getLookAtY(character.root.position, this.activityParticipantTarget) +
+      (character.config.rotationOffsetY ?? 0);
+  }
+
+  private getConfiguredRotationY(config: SpaceCharacterConfig): number {
+    return config.rotationY + (config.rotationOffsetY ?? 0);
+  }
+
+  private getLookAtY(position: Vector3, target: Vector3): number {
+    return Math.atan2(target.x - position.x, target.z - position.z);
+  }
+
+  private prepareImportedMesh(mesh: AbstractMesh): void {
+    mesh.isPickable = false;
+    mesh.checkCollisions = false;
+    mesh.metadata = {
+      ...(mesh.metadata ?? {}),
+      dynamic: true,
+      role: "space-character-mesh"
+    };
+  }
+
+  private hideImportedScenePropMeshes(meshes: AbstractMesh[]): void {
+    meshes.forEach((mesh) => {
+      const meshName = this.normalizeAssetName(mesh.name);
+      const shouldHide =
+        meshName.includes("floor") ||
+        meshName.includes("ground") ||
+        meshName.includes("baseplate") ||
+        meshName.includes("shadowplane");
+
+      if (!shouldHide) {
+        return;
+      }
+
+      mesh.setEnabled(false);
+      mesh.isVisible = false;
+      mesh.isPickable = false;
+    });
+  }
+
+  private normalizeImportedCharacterHeight(
+    root: TransformNode,
+    targetHeight: number
+  ): void {
+    root.computeWorldMatrix(true);
+
+    const bounds = root.getHierarchyBoundingVectors(
+      true,
+      (mesh) => mesh.isEnabled()
+    );
+    const currentHeight = bounds.max.y - bounds.min.y;
+
+    if (currentHeight > 0.001) {
+      root.scaling.scaleInPlace(targetHeight / currentHeight);
+    }
+  }
+
+  private alignCharacterBottomToY(root: TransformNode, yPosition: number): void {
+    root.computeWorldMatrix(true);
+
+    const bounds = root.getHierarchyBoundingVectors(
+      true,
+      (mesh) => mesh.isEnabled()
+    );
+
+    root.position.y += yPosition - bounds.min.y;
+  }
+
+  private centerImportedCharacterOnRoot(root: TransformNode): void {
+    root.computeWorldMatrix(true);
+
+    const bounds = root.getHierarchyBoundingVectors(
+      true,
+      (mesh) => mesh.isEnabled()
+    );
+    const centerX = (bounds.min.x + bounds.max.x) * 0.5;
+    const centerZ = (bounds.min.z + bounds.max.z) * 0.5;
+    const deltaWorld = new Vector3(
+      root.position.x - centerX,
+      0,
+      root.position.z - centerZ
+    );
+
+    if (
+      !Number.isFinite(deltaWorld.x) ||
+      !Number.isFinite(deltaWorld.z) ||
+      deltaWorld.lengthSquared() <= 0.0001
+    ) {
+      return;
+    }
+
+    const inverseRootMatrix = root.getWorldMatrix().clone().invert();
+    const deltaLocal = Vector3.TransformNormal(deltaWorld, inverseRootMatrix);
+
+    root.getChildren().forEach((child) => {
+      if (child instanceof TransformNode) {
+        child.position.addInPlace(deltaLocal);
+      }
+    });
+    root.computeWorldMatrix(true);
+  }
+
+  private normalizeAssetName(name: string): string {
+    return name.toLowerCase().replace(/[^a-z0-9]/g, "");
   }
 
   private createMaterial(name: string, color: Color3): StandardMaterial {

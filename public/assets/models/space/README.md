@@ -1,18 +1,25 @@
 # Modelos GLB para la estacion espacial
 
-Puedes agregar personajes propios en esta carpeta.
+Puedes agregar modelos propios para el segundo escenario en:
+
+```text
+public/assets/models/space/characters/
+```
 
 Nombres esperados por defecto:
 
 ```text
-astronaut01.glb
-technician01.glb
+space-student-01.glb
+space-student-02.glb
+space-student-03.glb
 ```
 
-Ruta base:
+Tambien se aceptan estos nombres alternativos si prefieres no usar guiones:
 
 ```text
-public/assets/models/space/
+space-student01.glb
+space-student02.glb
+space-student03.glb
 ```
 
 Si quieres cambiar nombres, posiciones o escala, edita:

@@ -97,6 +97,10 @@ export class SpaceStationScene {
     this.scene = scene;
 
     this.startCPTActivity = () => {
+      this.spaceCharacterManager?.lookAtActivityParticipant(
+        stationLayout.evaluationEyePosition
+      );
+
       const metricsManager = new CPTMetricsManager();
       const distractorManager = new CPTDistractorManager(scene, {
         anchors: stationLayout.distractorAnchors,
