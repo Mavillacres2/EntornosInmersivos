@@ -42,6 +42,7 @@ export class SpaceStationScene {
   private releasePointerLockButton: HTMLButtonElement | null = null;
   private audioToggleButton: HTMLButtonElement | null = null;
   private pointerLockStatus: HTMLParagraphElement | null = null;
+  private evaluationHiddenMeshes: Mesh[] = [];
   private unsubscribePointerLock: (() => void) | null = null;
   private stationAudioEnabled = true;
   private evaluationStarted = false;
@@ -90,8 +91,12 @@ export class SpaceStationScene {
       evaluationPosition: stationLayout.evaluationEyePosition,
       evaluationTarget: stationLayout.evaluationLookAt,
       collisionMeshes: stationLayout.collisionMeshes,
-      bounds: stationLayout.cameraBounds
+      bounds: stationLayout.cameraBounds,
+      evaluationFov: 0.62,
+      evaluationYawLimit: Math.PI / 12,
+      evaluationPitchLimit: 0.24
     });
+    this.evaluationHiddenMeshes = stationLayout.evaluationHiddenMeshes;
     this.cameraManager.enterExplorationMode();
     this.showExplorationPanel();
     this.scene = scene;
@@ -144,6 +149,7 @@ export class SpaceStationScene {
     this.spaceCharacterManager = null;
     this.audioManager = null;
     this.cameraManager = null;
+    this.evaluationHiddenMeshes = [];
     this.scene = null;
   }
 
@@ -293,9 +299,17 @@ export class SpaceStationScene {
     cameraManager.disablePointerLock();
     this.spaceAmbientManager?.setMode("evaluation");
     this.spaceAmbientManager?.setCondition("baseline");
+    this.hideEvaluationObstructions();
     await cameraManager.enterEvaluationMode();
     this.removeExplorationPanel();
     this.startCPTActivity();
+  }
+
+  private hideEvaluationObstructions(): void {
+    this.evaluationHiddenMeshes.forEach((mesh) => {
+      mesh.checkCollisions = false;
+      mesh.setEnabled(false);
+    });
   }
 
   private setExplorationPanelBusy(): void {

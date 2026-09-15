@@ -50,6 +50,7 @@ interface BoxOptions {
   receivesShadow?: boolean;
   collides?: boolean;
   dynamic?: boolean;
+  hideDuringEvaluation?: boolean;
   rotationX?: number;
   rotationY?: number;
   rotationZ?: number;
@@ -75,6 +76,7 @@ export interface SpaceStationBuildResult {
   distractorAnchors: SpaceStationDistractorAnchors;
   cameraBounds: CameraBounds;
   collisionMeshes: Mesh[];
+  evaluationHiddenMeshes: Mesh[];
   shadowCasters: Mesh[];
   shadowReceivers: Mesh[];
   shadowLight: DirectionalLight;
@@ -101,6 +103,7 @@ export class SpaceStationBuilder {
   private readonly shadowCasters: Mesh[] = [];
   private readonly shadowReceivers: Mesh[] = [];
   private readonly collisionMeshes: Mesh[] = [];
+  private readonly evaluationHiddenMeshes: Mesh[] = [];
   private readonly windowGlassX = -5.20;
   private readonly windowBackdropX = -7.68;
   private readonly outsideWindowX = -7.02;
@@ -138,8 +141,8 @@ export class SpaceStationBuilder {
     return {
       explorationEyePosition: new Vector3(0, 1.52, -5.6),
       explorationLookAt: new Vector3(0, 2.15, 3.8),
-      evaluationEyePosition: new Vector3(0, 1.28, -0.96),
-      evaluationLookAt: new Vector3(0, 2.48, 5.55),
+      evaluationEyePosition: new Vector3(0, 1.48, -1.46),
+      evaluationLookAt: new Vector3(0, 2.52, 5.55),
       cptScreenMesh,
       cptScreenAnchor: anchors.cptScreenAnchor,
       evaluationSeatAnchor: anchors.evaluationSeatAnchor,
@@ -158,6 +161,7 @@ export class SpaceStationBuilder {
         maxZ: 5.05
       },
       collisionMeshes: [...this.collisionMeshes],
+      evaluationHiddenMeshes: [...this.evaluationHiddenMeshes],
       shadowCasters: [...this.shadowCasters],
       shadowReceivers: [...this.shadowReceivers],
       shadowLight,
@@ -626,12 +630,12 @@ export class SpaceStationBuilder {
 
     this.createConsoleMiniScreen(
       "leftConsoleOrbitScreen",
-      new Vector3(-1.52, 1.27, 1.2),
+      new Vector3(-1.52, 1.2, 1.2),
       "orbit"
     );
     this.createConsoleMiniScreen(
       "rightConsoleWaveScreen",
-      new Vector3(1.52, 1.27, 1.2),
+      new Vector3(1.52, 1.2, 1.2),
       "wave"
     );
 
@@ -647,11 +651,12 @@ export class SpaceStationBuilder {
       this.createBox({
         name: `cptConsoleSoftButton${index + 1}`,
         width: 0.28,
-        height: 0.04,
-        depth: 0.2,
-        position: new Vector3(button.x, 1.26, button.z),
+        height: 0.025,
+        depth: 0.16,
+        position: new Vector3(button.x, 1.12, button.z),
         material: button.material,
-        castsShadow: true
+        castsShadow: true,
+        hideDuringEvaluation: true
       });
     });
 
@@ -668,11 +673,13 @@ export class SpaceStationBuilder {
       this.createBox({
         name: `consolePulseIndicator${index + 1}`,
         width: 0.14,
-        height: 0.035,
+        height: 0.022,
         depth: 0.14,
-        position: new Vector3(xPosition, 1.29, 1.74),
+        position: new Vector3(xPosition, 1.31, 1.72),
         material,
-        dynamic: true
+        dynamic: true,
+        rotationX: -0.22,
+        hideDuringEvaluation: true
       });
     });
 
@@ -718,12 +725,13 @@ export class SpaceStationBuilder {
     this.createBox({
       name,
       width: 0.94,
-      height: 0.035,
+      height: 0.024,
       depth: 0.42,
       position,
       material,
       castsShadow: true,
-      rotationX: -0.22
+      rotationX: -0.22,
+      hideDuringEvaluation: true
     });
   }
 
@@ -1504,13 +1512,13 @@ export class SpaceStationBuilder {
   private createConsoleLooseEquipment(): void {
     this.createDataTablet(
       "leftConsoleLooseTablet",
-      new Vector3(-1.72, 1.34, 0.34),
+      new Vector3(-1.72, 1.13, 0.38),
       -0.28,
       this.materials.accentCyan
     );
     this.createDataTablet(
       "rightConsoleLooseTablet",
-      new Vector3(1.68, 1.34, 0.28),
+      new Vector3(1.68, 1.13, 0.42),
       0.32,
       this.materials.accentAmber
     );
@@ -1518,25 +1526,25 @@ export class SpaceStationBuilder {
     this.createBox({
       name: "consoleNotebookPad",
       width: 0.7,
-      height: 0.035,
+      height: 0.025,
       depth: 0.44,
-      position: new Vector3(0.8, 1.32, -0.05),
+      position: new Vector3(0.8, 1.13, 0.44),
       material: this.materials.posterPaper,
       castsShadow: true,
       rotationY: -0.18,
-      rotationX: -0.08
+      hideDuringEvaluation: true
     });
 
     this.createBox({
       name: "consoleStylus",
       width: 0.05,
-      height: 0.035,
+      height: 0.025,
       depth: 0.52,
-      position: new Vector3(0.22, 1.36, -0.1),
+      position: new Vector3(0.22, 1.15, 0.58),
       material: this.materials.accentAmber,
       castsShadow: true,
       rotationY: 0.54,
-      rotationX: -0.06
+      hideDuringEvaluation: true
     });
   }
 
@@ -1745,25 +1753,25 @@ export class SpaceStationBuilder {
     this.createBox({
       name: `${name}Body`,
       width: 0.58,
-      height: 0.035,
+      height: 0.024,
       depth: 0.38,
       position,
       material: this.materials.panel,
       castsShadow: true,
       rotationY,
-      rotationX: -0.16
+      hideDuringEvaluation: true
     });
 
     this.createBox({
       name: `${name}GlowLine`,
       width: 0.38,
-      height: 0.04,
-      depth: 0.035,
-      position: new Vector3(position.x, position.y + 0.03, position.z - 0.08),
+      height: 0.014,
+      depth: 0.045,
+      position: new Vector3(position.x, position.y + 0.023, position.z - 0.08),
       material: accentMaterial,
       castsShadow: true,
       rotationY,
-      rotationX: -0.16
+      hideDuringEvaluation: true
     });
   }
 
@@ -3018,6 +3026,10 @@ export class SpaceStationBuilder {
     if (options.collides) {
       mesh.checkCollisions = true;
       this.collisionMeshes.push(mesh);
+    }
+
+    if (options.hideDuringEvaluation) {
+      this.evaluationHiddenMeshes.push(mesh);
     }
 
     return mesh;
