@@ -3,12 +3,13 @@ import type { Scene } from "@babylonjs/core";
 
 import { ClassroomScene } from "./scenes/ClassroomScene";
 import { SpaceStationScene } from "./scenes/SpaceStationScene";
+import { VisualDiscriminationScene } from "./scenes/VisualDiscriminationScene";
 
 import "./style.css";
 
 const PERFORMANCE_RENDER_SCALE = 1.15;
 
-type ScenarioId = "classroom" | "space-station";
+type ScenarioId = "classroom" | "space-station" | "interactive-museum";
 
 interface ScenarioController {
   create: () => Scene;
@@ -34,6 +35,12 @@ const SCENARIO_OPTIONS: ScenarioOption[] = [
     title: "Estacion espacial",
     subtitle: "Actividad CPT",
     buttonLabel: "Entrar al CPT"
+  },
+  {
+    id: "interactive-museum",
+    title: "Museo interactivo",
+    subtitle: "Discriminacion visual",
+    buttonLabel: "Entrar al museo"
   }
 ];
 
@@ -119,6 +126,13 @@ function startScenario(scenarioId: ScenarioId): void {
   canvas.focus();
 }
 
+function returnToScenarioSelector(): void {
+  activeScenario?.dispose();
+  activeScenario = null;
+  activeScene = null;
+  showScenarioSelector();
+}
+
 function createScenario(scenarioId: ScenarioId): ScenarioController {
   switch (scenarioId) {
     case "classroom":
@@ -126,5 +140,8 @@ function createScenario(scenarioId: ScenarioId): ScenarioController {
 
     case "space-station":
       return new SpaceStationScene(engine, canvas);
+
+    case "interactive-museum":
+      return new VisualDiscriminationScene(engine, canvas, returnToScenarioSelector);
   }
 }
