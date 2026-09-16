@@ -741,7 +741,6 @@ export class VisualDiscriminationController {
       );
 
       hitBox.position = new Vector3(xPosition, 2.36, 5.48);
-      hitBox.rotation.y = Math.PI;
       hitBox.isVisible = false;
       hitBox.isPickable = true;
       hitBox.metadata = {

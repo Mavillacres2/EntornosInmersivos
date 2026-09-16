@@ -1,16 +1,19 @@
 import {
   Color4,
+  Ray,
   RenderTargetTexture,
   Scene,
-  ShadowGenerator
+  ShadowGenerator,
+  Vector3
 } from "@babylonjs/core";
-import type { DirectionalLight, Engine, Material, Mesh } from "@babylonjs/core";
+import type { AbstractMesh, DirectionalLight, Engine, Material, Mesh } from "@babylonjs/core";
 
 import { VisualDiscriminationController } from "../activities/visual-discrimination/VisualDiscriminationController";
 import { DEFAULT_VISUAL_DISCRIMINATION_CONFIG } from "../activities/visual-discrimination/VisualDiscriminationConfig";
 import { VisualDiscriminationDistractorManager } from "../activities/visual-discrimination/VisualDiscriminationDistractorManager";
 import { AudioManager } from "../audio/AudioManager";
 import { CameraManager } from "../camera/CameraManager";
+import { MuseumCharacterManager } from "../characters/MuseumCharacterManager";
 import { MuseumBuilder } from "../environment/MuseumBuilder";
 
 export class VisualDiscriminationScene {
@@ -21,6 +24,7 @@ export class VisualDiscriminationScene {
   private scene: Scene | null = null;
   private audioManager: AudioManager | null = null;
   private cameraManager: CameraManager | null = null;
+  private museumCharacterManager: MuseumCharacterManager | null = null;
   private controller: VisualDiscriminationController | null = null;
   private explorationPanel: HTMLElement | null = null;
   private startActivityButton: HTMLButtonElement | null = null;
@@ -28,6 +32,11 @@ export class VisualDiscriminationScene {
   private releasePointerLockButton: HTMLButtonElement | null = null;
   private audioToggleButton: HTMLButtonElement | null = null;
   private pointerLockStatus: HTMLParagraphElement | null = null;
+  private evaluationHiddenMeshes: Mesh[] = [];
+  private activityPanelMesh: Mesh | null = null;
+  private evaluationEyePosition: Vector3 | null = null;
+  private evaluationLookAt: Vector3 | null = null;
+  private charactersReadyPromise: Promise<void> | null = null;
   private unsubscribePointerLock: (() => void) | null = null;
   private museumAudioEnabled = true;
   private evaluationStarted = false;
@@ -64,6 +73,10 @@ export class VisualDiscriminationScene {
     this.optimizeStaticMuseum(scene);
     this.audioManager = new AudioManager();
     void this.audioManager.initialize(scene);
+    this.museumCharacterManager = new MuseumCharacterManager(scene);
+    this.charactersReadyPromise = this.museumCharacterManager.initialize().catch((error: unknown) => {
+      console.warn("No se pudieron cargar todos los visitantes del museo.", error);
+    });
     this.cameraManager = new CameraManager({
       scene,
       canvas: this.canvas,
@@ -72,8 +85,15 @@ export class VisualDiscriminationScene {
       evaluationPosition: museumLayout.evaluationEyePosition,
       evaluationTarget: museumLayout.evaluationLookAt,
       collisionMeshes: museumLayout.collisionMeshes,
-      bounds: museumLayout.cameraBounds
+      bounds: museumLayout.cameraBounds,
+      evaluationFov: 0.62,
+      evaluationYawLimit: Math.PI / 10,
+      evaluationPitchLimit: 0.24
     });
+    this.evaluationHiddenMeshes = museumLayout.evaluationHiddenMeshes;
+    this.activityPanelMesh = museumLayout.activityPanelMesh;
+    this.evaluationEyePosition = museumLayout.evaluationEyePosition.clone();
+    this.evaluationLookAt = museumLayout.evaluationLookAt.clone();
     this.cameraManager.enterExplorationMode();
     this.showExplorationPanel();
     this.scene = scene;
@@ -106,13 +126,20 @@ export class VisualDiscriminationScene {
   dispose(): void {
     this.removeExplorationPanel();
     this.controller?.dispose();
+    this.museumCharacterManager?.dispose();
     this.audioManager?.dispose();
     this.cameraManager?.dispose();
     this.scene?.dispose();
 
     this.controller = null;
+    this.museumCharacterManager = null;
     this.audioManager = null;
     this.cameraManager = null;
+    this.evaluationHiddenMeshes = [];
+    this.activityPanelMesh = null;
+    this.evaluationEyePosition = null;
+    this.evaluationLookAt = null;
+    this.charactersReadyPromise = null;
     this.scene = null;
   }
 
@@ -267,9 +294,79 @@ export class VisualDiscriminationScene {
     this.evaluationStarted = true;
     this.setExplorationPanelBusy();
     cameraManager.disablePointerLock();
+    this.hideEvaluationObstructions();
+    await this.charactersReadyPromise;
+    this.museumCharacterManager?.setMode("evaluation");
     await cameraManager.enterEvaluationMode();
+    this.validateEvaluationSightline();
     this.removeExplorationPanel();
     this.startVisualDiscriminationActivity();
+  }
+
+  private hideEvaluationObstructions(): void {
+    this.evaluationHiddenMeshes.forEach((mesh) => {
+      mesh.checkCollisions = false;
+      mesh.setEnabled(false);
+    });
+  }
+
+  private validateEvaluationSightline(): void {
+    const scene = this.scene;
+    const activityPanelMesh = this.activityPanelMesh;
+    const evaluationEyePosition = this.evaluationEyePosition;
+    const evaluationLookAt = this.evaluationLookAt;
+
+    if (!scene || !activityPanelMesh || !evaluationEyePosition || !evaluationLookAt) {
+      return;
+    }
+
+    const direction = evaluationLookAt.subtract(evaluationEyePosition);
+    const distance = direction.length();
+
+    if (distance <= 0.01) {
+      return;
+    }
+
+    const ray = new Ray(
+      evaluationEyePosition,
+      direction.normalize(),
+      Math.max(0.1, distance - 0.08)
+    );
+    const blockers = scene.meshes.filter((mesh) => {
+      if (!this.shouldCheckEvaluationSightline(mesh, activityPanelMesh)) {
+        return false;
+      }
+
+      const bounds = mesh.getBoundingInfo().boundingBox;
+
+      return ray.intersectsBoxMinMax(bounds.minimumWorld, bounds.maximumWorld);
+    });
+
+    if (blockers.length > 0) {
+      console.warn(
+        "[VisualDiscriminationScene] Obstrucciones detectadas frente al panel:",
+        blockers.map((mesh) => mesh.name)
+      );
+      return;
+    }
+
+    console.info("[VisualDiscriminationScene] Panel visible: linea visual despejada.");
+  }
+
+  private shouldCheckEvaluationSightline(mesh: AbstractMesh, activityPanelMesh: Mesh): boolean {
+    if (
+      mesh === activityPanelMesh ||
+      !mesh.isEnabled() ||
+      !mesh.isVisible ||
+      mesh.name.startsWith("visualDiscrimination") ||
+      mesh.name.startsWith("activityZoneHeader") ||
+      mesh.name.startsWith("museumFloor") ||
+      mesh.name.startsWith("museumCeiling")
+    ) {
+      return false;
+    }
+
+    return !mesh.metadata?.ignoreSightline;
   }
 
   private setExplorationPanelBusy(): void {
@@ -311,6 +408,8 @@ export class VisualDiscriminationScene {
   }
 
   private handleExplorationKeyDown(event: KeyboardEvent): void {
+    this.startMuseumAudio();
+
     if (
       this.evaluationStarted ||
       event.code !== "KeyQ" ||
