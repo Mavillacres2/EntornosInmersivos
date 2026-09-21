@@ -1,0 +1,611 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #dedbd0;
+}
+
+#renderCanvas {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  position: fixed;
+  inset: 0;
+  outline: none;
+}
+
+#scenarioSelector {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-content: center;
+  box-sizing: border-box;
+  padding: 28px;
+  background: linear-gradient(135deg, #dfe9e6 0%, #c8d8dc 52%, #eadfbf 100%);
+  color: #16232a;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#scenarioSelector h1 {
+  margin: 0 0 10px;
+  text-align: center;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+#scenarioSelector > p {
+  margin: 0 0 28px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+#scenarioSelector .scenarioGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 320px));
+  gap: 18px;
+}
+
+#scenarioSelector .scenarioCard {
+  box-sizing: border-box;
+  min-height: 184px;
+  padding: 20px;
+  border: 1px solid rgba(22, 35, 42, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 42px rgba(42, 57, 66, 0.16);
+}
+
+#scenarioSelector .scenarioCard h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+#scenarioSelector .scenarioCard p {
+  min-height: 42px;
+  margin: 0 0 20px;
+  color: #3f4e56;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+#scenarioSelector .scenarioCard button {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: #2f7d5c;
+  color: #ffffff;
+  font: 700 15px Arial, Helvetica, sans-serif;
+  cursor: pointer;
+  padding: 0 12px;
+}
+
+#scenarioSelector .scenarioCard button:hover {
+  background: #358c68;
+}
+
+@media (max-width: 640px) {
+  #scenarioSelector .scenarioGrid {
+    grid-template-columns: minmax(220px, 340px);
+  }
+}
+
+@media (min-width: 641px) and (max-width: 980px) {
+  #scenarioSelector .scenarioGrid {
+    grid-template-columns: repeat(2, minmax(220px, 320px));
+  }
+}
+
+#visualDiscriminationReticle {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 8;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+#visualDiscriminationReticle::before,
+#visualDiscriminationReticle::after {
+  content: "";
+  position: absolute;
+  background: rgba(248, 250, 252, 0.88);
+  box-shadow: 0 0 5px rgba(15, 23, 42, 0.48);
+}
+
+#visualDiscriminationReticle::before {
+  left: 11px;
+  top: 2px;
+  width: 2px;
+  height: 20px;
+}
+
+#visualDiscriminationReticle::after {
+  left: 2px;
+  top: 11px;
+  width: 20px;
+  height: 2px;
+}
+
+#explorationPanel {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 10;
+  width: min(320px, calc(100vw - 48px));
+  box-sizing: border-box;
+  padding: 18px;
+  border: 1px solid rgba(248, 250, 252, 0.16);
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.88);
+  color: #f8fafc;
+  font-family: Arial, Helvetica, sans-serif;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+}
+
+#explorationPanel h1 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+#explorationPanel p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+#explorationPanel button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: #2f7d5c;
+  color: #ffffff;
+  font: 700 15px Arial, Helvetica, sans-serif;
+  cursor: pointer;
+  padding: 0 12px;
+  white-space: normal;
+}
+
+#explorationPanel button:hover:not(:disabled) {
+  background: #358c68;
+}
+
+#explorationPanel button:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+#explorationPanel .pointerLockStatus {
+  min-height: 36px;
+  margin-bottom: 10px;
+  color: #dbeafe;
+  font-size: 13px;
+}
+
+#explorationPanel .explorationActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#explorationPanel .explorationActions button {
+  min-height: 40px;
+  margin-top: 0;
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+#explorationPanel .secondaryButton {
+  background: #475569;
+}
+
+#explorationPanel .secondaryButton:hover:not(:disabled) {
+  background: #56677d;
+}
+
+#evaluationSetup {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  box-sizing: border-box;
+  overflow: auto;
+  padding: 24px;
+  background: #edf1f2;
+  color: #17242a;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#evaluationSetup .setupShell {
+  width: min(1040px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+  box-sizing: border-box;
+  border: 1px solid #ccd5d8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(31, 45, 51, 0.12);
+}
+
+#evaluationSetup .setupHeader,
+#evaluationSetup .cameraPanelHeading,
+#evaluationSetup .setupFooter,
+#evaluationSetup .calibrationStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+#evaluationSetup .setupHeader {
+  padding-bottom: 18px;
+  border-bottom: 1px solid #dce3e5;
+}
+
+#evaluationSetup .setupEyebrow,
+#evaluationSetup .cameraPanelHeading span {
+  margin: 0 0 4px;
+  color: #527078;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+#evaluationSetup h1,
+#evaluationSetup h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+#evaluationSetup h1 {
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+#evaluationSetup h2 {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+#evaluationSetup .backendBadge,
+#evaluationSetup .cameraPanelHeading strong {
+  flex: 0 0 auto;
+  max-width: 190px;
+  overflow: hidden;
+  color: #52616a;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#evaluationSetup [data-tone="success"] {
+  color: #24714f;
+}
+
+#evaluationSetup [data-tone="warning"] {
+  color: #9a5c12;
+}
+
+#evaluationSetup [data-tone="danger"] {
+  color: #a23939;
+}
+
+#evaluationSetup .setupParticipant {
+  margin-top: 20px;
+}
+
+#evaluationSetup label {
+  display: block;
+  margin-bottom: 7px;
+  color: #33464e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#evaluationSetup .setupInlineControl {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 10px;
+}
+
+#evaluationSetup input,
+#evaluationSetup select {
+  min-width: 0;
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 1px solid #b9c6ca;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #17242a;
+  font: 15px Arial, Helvetica, sans-serif;
+  padding: 0 12px;
+}
+
+#evaluationSetup select {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+#evaluationSetup button,
+#scenarioSelector .finishEvaluationButton,
+#returnToScenarioSelector,
+#evaluationFinished button {
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 6px;
+  background: #2f7d5c;
+  color: #ffffff;
+  cursor: pointer;
+  font: 700 14px Arial, Helvetica, sans-serif;
+  padding: 0 16px;
+}
+
+#evaluationSetup button:hover:not(:disabled),
+#scenarioSelector .finishEvaluationButton:hover:not(:disabled),
+#returnToScenarioSelector:hover,
+#evaluationFinished button:hover {
+  background: #358c68;
+}
+
+#evaluationSetup button:disabled,
+#scenarioSelector .finishEvaluationButton:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+#evaluationSetup .secondaryButton {
+  background: #52616a;
+}
+
+#evaluationSetup .secondaryButton:hover:not(:disabled) {
+  background: #62747e;
+}
+
+#evaluationSetup .setupToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+#evaluationSetup .cameraSetupGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+#evaluationSetup .cameraSetupPanel {
+  padding: 16px;
+  border: 1px solid #d4dcdf;
+  border-radius: 8px;
+  background: #f8faf9;
+}
+
+#evaluationSetup .cameraPanelHeading {
+  min-height: 44px;
+  margin-bottom: 14px;
+}
+
+#evaluationSetup .cameraPreview {
+  position: relative;
+  display: grid;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #aab9be;
+  border-radius: 6px;
+  background: #17242a;
+  color: #cbd6d9;
+  font-size: 13px;
+}
+
+#evaluationSetup .cameraPreview > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+#evaluationSetup .cameraPreviewVideo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scaleX(-1);
+}
+
+#evaluationSetup .cameraLandmarkOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#evaluationSetup .calibrationStrip {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-left: 4px solid #d8ae3c;
+  background: #f6f4eb;
+}
+
+#evaluationSetup .calibrationStrip strong,
+#evaluationSetup .calibrationStrip span {
+  display: block;
+}
+
+#evaluationSetup .calibrationStrip span {
+  margin-top: 4px;
+  color: #52616a;
+  font-size: 13px;
+}
+
+#evaluationSetup progress {
+  width: min(260px, 35%);
+  height: 12px;
+  accent-color: #2f7d5c;
+}
+
+#evaluationSetup .setupFooter {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #dce3e5;
+}
+
+#evaluationSetup .setupFooter p {
+  margin: 0;
+  color: #52616a;
+  font-size: 13px;
+}
+
+#scenarioSelector .finishEvaluationButton {
+  width: min(260px, 100%);
+  margin: 22px auto 0;
+  background: #52616a;
+}
+
+#returnToScenarioSelector {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 15;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+#evaluationFinished {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #edf1f2;
+  color: #17242a;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#evaluationFinished section {
+  width: min(460px, 100%);
+  box-sizing: border-box;
+  padding: 28px;
+  border: 1px solid #ccd5d8;
+  border-radius: 8px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 18px 50px rgba(31, 45, 51, 0.12);
+}
+
+#evaluationFinished h1 {
+  margin: 0 0 10px;
+  font-size: 26px;
+  letter-spacing: 0;
+}
+
+#evaluationFinished p {
+  margin: 0 0 20px;
+  color: #52616a;
+  line-height: 1.45;
+}
+
+#analysisDebugOverlay {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 10000;
+  width: min(510px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #43d8ee;
+  border-radius: 6px;
+  background: rgba(7, 19, 29, 0.94);
+  color: #edf7fa;
+  font: 12px/1.4 Consolas, monospace;
+  pointer-events: none;
+}
+
+#analysisDebugOverlay > strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #43d8ee;
+  letter-spacing: 0;
+}
+
+#analysisDebugOverlay .analysisDebugCanvases {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#analysisDebugOverlay figure {
+  min-width: 0;
+  margin: 0;
+}
+
+#analysisDebugOverlay canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 8 / 5;
+  border: 1px solid #28404e;
+}
+
+#analysisDebugOverlay figcaption {
+  margin-top: 3px;
+  color: #91a5b5;
+  text-align: center;
+}
+
+#analysisDebugOverlay pre {
+  margin: 8px 0 0;
+  overflow: hidden;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 760px) {
+  #evaluationSetup {
+    padding: 12px;
+  }
+
+  #evaluationSetup .setupShell {
+    padding: 16px;
+  }
+
+  #evaluationSetup .cameraSetupGrid {
+    grid-template-columns: 1fr;
+  }
+
+  #evaluationSetup .setupHeader,
+  #evaluationSetup .setupFooter,
+  #evaluationSetup .calibrationStrip {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #evaluationSetup .setupInlineControl {
+    grid-template-columns: 1fr;
+  }
+
+  #evaluationSetup progress {
+    width: 100%;
+  }
+}
