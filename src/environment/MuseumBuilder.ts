@@ -306,7 +306,8 @@ export class MuseumBuilder {
     });
     this.createBrochureStand(new Vector3(6.38, 0, -6.72));
     this.createWelcomeOrbDisplay(new Vector3(-6.25, 0, -6.7));
-    this.createDigitalWelcomeKiosk(new Vector3(1.55, 0, -6.38));
+    this.createMuseumBackWallPosters();
+    this.createMuseumGuideTable(new Vector3(1.45, 0, -6.46));
     this.createReceptionQueueDetails();
   }
 
@@ -363,67 +364,70 @@ export class MuseumBuilder {
   }
 
   private createEntranceWindows(): void {
-    const center = new Vector3(6.45, 2.54, -7.82);
+    [
+      { name: "Left", x: 5.52 },
+      { name: "Right", x: 6.58 }
+    ].forEach((windowData) => {
+      const center = new Vector3(windowData.x, 2.64, -7.82);
 
-    this.createBox({
-      name: "museumBackWindowDoubleFrame",
-      width: 1.36,
-      height: 0.74,
-      depth: 0.07,
-      position: center,
-      material: this.materials.gold,
-      castsShadow: true
-    });
-    this.createBox({
-      name: "museumBackWindowRecess",
-      width: 1.2,
-      height: 0.6,
-      depth: 0.045,
-      position: new Vector3(center.x, center.y, -7.775),
-      material: this.materials.charcoal
-    });
-    [-0.31, 0.31].forEach((xOffset, index) => {
       this.createBox({
-        name: `museumBackWindowGlassPane${index + 1}`,
-        width: 0.5,
-        height: 0.5,
+        name: `museumBackWindow${windowData.name}OuterFrame`,
+        width: 0.78,
+        height: 0.88,
+        depth: 0.075,
+        position: center,
+        material: this.materials.gold,
+        castsShadow: true
+      });
+      this.createBox({
+        name: `museumBackWindow${windowData.name}Recess`,
+        width: 0.62,
+        height: 0.72,
+        depth: 0.045,
+        position: new Vector3(center.x, center.y, -7.775),
+        material: this.materials.charcoal
+      });
+      this.createBox({
+        name: `museumBackWindow${windowData.name}Glass`,
+        width: 0.52,
+        height: 0.62,
         depth: 0.035,
-        position: new Vector3(center.x + xOffset, center.y, -7.735),
+        position: new Vector3(center.x, center.y, -7.735),
         material: this.materials.glass
       });
       this.createBox({
-        name: `museumBackWindowPaneVertical${index + 1}`,
-        width: 0.028,
-        height: 0.5,
-        depth: 0.04,
-        position: new Vector3(center.x + xOffset, center.y, -7.705),
+        name: `museumBackWindow${windowData.name}MullionVertical`,
+        width: 0.032,
+        height: 0.62,
+        depth: 0.045,
+        position: new Vector3(center.x, center.y, -7.7),
         material: this.materials.gold
       });
       this.createBox({
-        name: `museumBackWindowPaneHorizontal${index + 1}`,
-        width: 0.5,
-        height: 0.028,
-        depth: 0.04,
-        position: new Vector3(center.x + xOffset, center.y, -7.7),
+        name: `museumBackWindow${windowData.name}MullionHorizontal`,
+        width: 0.52,
+        height: 0.032,
+        depth: 0.045,
+        position: new Vector3(center.x, center.y, -7.695),
         material: this.materials.gold
       });
-    });
-    this.createBox({
-      name: "museumBackWindowCenterMullion",
-      width: 0.06,
-      height: 0.62,
-      depth: 0.05,
-      position: new Vector3(center.x, center.y, -7.695),
-      material: this.materials.gold
-    });
-    this.createBox({
-      name: "museumBackWindowSill",
-      width: 1.52,
-      height: 0.08,
-      depth: 0.16,
-      position: new Vector3(center.x, 2.12, -7.72),
-      material: this.materials.wood,
-      castsShadow: true
+      this.createBox({
+        name: `museumBackWindow${windowData.name}Sill`,
+        width: 0.92,
+        height: 0.08,
+        depth: 0.16,
+        position: new Vector3(center.x, 2.15, -7.72),
+        material: this.materials.wood,
+        castsShadow: true
+      });
+      this.createBox({
+        name: `museumBackWindow${windowData.name}Header`,
+        width: 0.92,
+        height: 0.07,
+        depth: 0.12,
+        position: new Vector3(center.x, 3.12, -7.74),
+        material: this.materials.gold
+      });
     });
   }
 
@@ -499,46 +503,73 @@ export class MuseumBuilder {
     this.shadowCasters.push(orb, ringA, ringB);
   }
 
-  private createDigitalWelcomeKiosk(position: Vector3): void {
+  private createMuseumBackWallPosters(): void {
+    this.createIllustratedWallPanel({
+      name: "museumTemporaryExhibitPanel",
+      title: "Exhibicion",
+      style: "museumMap",
+      width: 0.92,
+      height: 0.68,
+      position: new Vector3(-0.95, 1.72, -7.84),
+      rotationY: Math.PI
+    });
+    this.createIllustratedWallPanel({
+      name: "museumVisitorGuidePanel",
+      title: "Guia visual",
+      style: "colorWheel",
+      width: 0.92,
+      height: 0.68,
+      position: new Vector3(1.05, 1.72, -7.84),
+      rotationY: Math.PI
+    });
+  }
+
+  private createMuseumGuideTable(position: Vector3): void {
     this.createBox({
-      name: "museumDigitalKioskBase",
-      width: 0.56,
-      height: 0.62,
-      depth: 0.42,
-      position: position.add(new Vector3(0, 0.31, 0)),
-      material: this.materials.charcoal,
+      name: "museumGuideTableBase",
+      width: 1.06,
+      height: 0.56,
+      depth: 0.56,
+      position: position.add(new Vector3(0, 0.28, 0)),
+      material: this.materials.wood,
       castsShadow: true,
       collides: true
     });
     this.createBox({
-      name: "museumDigitalKioskStem",
-      width: 0.24,
-      height: 0.74,
-      depth: 0.2,
-      position: position.add(new Vector3(0, 0.98, 0)),
-      material: this.materials.wood,
-      castsShadow: true
+      name: "museumGuideTableTop",
+      width: 1.16,
+      height: 0.08,
+      depth: 0.66,
+      position: position.add(new Vector3(0, 0.6, 0)),
+      material: this.materials.gold,
+      castsShadow: true,
+      collides: true
     });
-    this.createBox({
-      name: "museumDigitalKioskScreen",
-      width: 0.74,
-      height: 0.46,
-      depth: 0.06,
-      position: position.add(new Vector3(0, 1.42, -0.06)),
-      material: this.materials.panel,
-      rotationX: -0.16,
-      castsShadow: true
+    [-0.32, -0.08, 0.16, 0.38].forEach((xOffset, index) => {
+      this.createBox({
+        name: `museumGuideFoldedMap${index + 1}`,
+        width: 0.18,
+        height: 0.035,
+        depth: 0.28,
+        position: position.add(new Vector3(xOffset, 0.67 + index * 0.012, -0.03)),
+        material: index % 2 === 0 ? this.materials.lightPanel : this.materials.accent,
+        rotationY: index % 2 === 0 ? 0.18 : -0.12,
+        castsShadow: true
+      });
     });
-    this.createBox({
-      name: "museumDigitalKioskScreenGlow",
-      width: 0.58,
-      height: 0.3,
-      depth: 0.025,
-      position: position.add(new Vector3(0, 1.42, -0.11)),
-      material: this.materials.lightPanel,
-      rotationX: -0.16
+    [
+      { x: -0.38, z: 0.2, diameter: 0.12, material: this.materials.accent },
+      { x: -0.22, z: 0.18, diameter: 0.09, material: this.materials.gold },
+      { x: 0.32, z: 0.2, diameter: 0.1, material: this.materials.stone }
+    ].forEach((item, index) => {
+      const paperweight = MeshBuilder.CreateSphere(`museumGuideTableObject${index + 1}`, { diameter: item.diameter, segments: 12 }, this.scene);
+
+      paperweight.position = position.add(new Vector3(item.x, 0.73, item.z));
+      paperweight.material = item.material;
+      paperweight.isPickable = false;
+      this.shadowCasters.push(paperweight);
     });
-    this.createMuseumLabel("Mapa", position.add(new Vector3(0, 1.68, -0.26)), 0);
+    this.createMuseumLabel("Folletos", position.add(new Vector3(0, 0.82, -0.36)), 0);
   }
 
   private createReceptionQueueDetails(): void {
