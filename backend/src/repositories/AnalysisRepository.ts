@@ -22,6 +22,15 @@ interface AnalysisCollections {
   summaries: Collection<Document>;
 }
 
+export interface SessionListQuery {
+  participantCode?: string;
+  status?: "active" | "finished";
+  dateFrom?: Date;
+  dateTo?: Date;
+  page: number;
+  pageSize: number;
+}
+
 export class AnalysisRepository {
   private indexesInitialized = false;
   private indexInitialization: Promise<void> | null = null;
@@ -191,6 +200,102 @@ export class AnalysisRepository {
     };
   }
 
+  async listSessions(query: SessionListQuery): Promise<{
+    items: Document[];
+    total: number;
+  }> {
+    const { sessions, summaries } = await this.getCollections();
+    const filter: Document = {};
+
+    if (query.participantCode) {
+      filter.participantCode = { $regex: escapeRegex(query.participantCode), $options: "i" };
+    }
+    if (query.status) filter.status = query.status;
+    if (query.dateFrom || query.dateTo) {
+      filter.startedAt = {};
+      if (query.dateFrom) filter.startedAt.$gte = query.dateFrom;
+      if (query.dateTo) filter.startedAt.$lte = query.dateTo;
+    }
+
+    const [documents, total] = await Promise.all([
+      sessions
+        .find(filter, { projection: { _id: 0 } })
+        .sort({ startedAt: -1 })
+        .skip((query.page - 1) * query.pageSize)
+        .limit(query.pageSize)
+        .toArray(),
+      sessions.countDocuments(filter)
+    ]);
+    const sessionIds = documents.map((document) => document.sessionId as string);
+    const sessionSummaries = sessionIds.length
+      ? await summaries
+          .find({ sessionId: { $in: sessionIds } }, {
+            projection: { _id: 0, sessionId: 1, sampleCount: 1 }
+          })
+          .toArray()
+      : [];
+    const sampleCounts = new Map(
+      sessionSummaries.map((summary) => [summary.sessionId, summary.sampleCount])
+    );
+
+    return {
+      items: documents.map((document) => ({
+        ...document,
+        sampleCount: sampleCounts.get(document.sessionId) ?? null
+      })),
+      total
+    };
+  }
+
+  async getSessionTimeline(sessionId: string, maxPoints: number): Promise<{
+    samples: Document[];
+    events: Document[];
+  }> {
+    const { samples, events } = await this.getCollections();
+    const totalSamples = await samples.countDocuments({ sessionId });
+    const stride = Math.max(1, Math.ceil(totalSamples / maxPoints));
+    const pipeline: Document[] = [
+      { $match: { sessionId } },
+      { $sort: { elapsedMs: 1 } },
+      { $project: {
+        _id: 0,
+        elapsedMs: 1,
+        capturedAt: 1,
+        scenarioId: 1,
+        activityId: 1,
+        blockNumber: 1,
+        condition: 1,
+        "upperCamera.head.movementMagnitude": 1,
+        "upperCamera.head.orientationDeviation": 1,
+        "upperCamera.head.onTaskOrientation": 1,
+        "upperCamera.trunk.movementMagnitude": 1,
+        "fullBodyCamera.globalMotorActivity": 1
+      } }
+    ];
+
+    if (stride > 1) {
+      pipeline.push(
+        { $group: {
+          _id: { $floor: { $divide: ["$elapsedMs", stride * 200] } },
+          sample: { $first: "$$ROOT" }
+        } },
+        { $replaceRoot: { newRoot: "$sample" } },
+        { $sort: { elapsedMs: 1 } },
+        { $limit: maxPoints }
+      );
+    }
+
+    const [timelineSamples, timelineEvents] = await Promise.all([
+      samples.aggregate(pipeline).toArray(),
+      events
+        .find({ sessionId }, { projection: { _id: 0, sessionId: 0, receivedAt: 0 } })
+        .sort({ elapsedMs: 1 })
+        .toArray()
+    ]);
+
+    return { samples: timelineSamples, events: timelineEvents };
+  }
+
   async getSamplesForSummary(sessionId: string): Promise<BehaviorSampleDto[]> {
     const { samples } = await this.getCollections();
     const documents = await samples
@@ -305,4 +410,8 @@ export class AnalysisRepository {
       )
     ]);
   }
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

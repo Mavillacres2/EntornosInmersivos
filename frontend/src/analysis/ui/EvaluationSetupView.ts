@@ -1,3 +1,5 @@
+import { ANALYSIS_CONFIG } from "../config/AnalysisConfig";
+import type { HandDetection, HeadOrientation } from "../types/AnalysisTypes";
 import type {
   PhysicalCameraManagerStatus,
   PhysicalCameraRole
@@ -62,24 +64,31 @@ export class EvaluationSetupView {
       <section class="setupShell" aria-labelledby="setupTitle">
         <header class="setupHeader">
           <div>
-            <p class="setupEyebrow">Sesion de evaluacion</p>
-            <h1 id="setupTitle">Configuracion de camaras</h1>
+            <p class="setupEyebrow">NeuroExplora · Preparación de la sesión</p>
+            <h1 id="setupTitle">Preparemos las cámaras</h1>
+            <p class="setupIntro">Un buen encuadre nos ayuda a registrar los movimientos durante las actividades.</p>
           </div>
-          <span class="backendBadge" id="analysisBackendStatus">API sin comprobar</span>
+          <span class="backendBadge" id="analysisBackendStatus">Conexión por comprobar</span>
         </header>
+        <ol class="setupSteps" aria-label="Progreso de configuración">
+          <li data-step="1" aria-current="step"><span>1</span> Identificar sesión</li>
+          <li data-step="2"><span>2</span> Ajustar cámaras</li>
+          <li data-step="3"><span>3</span> Calibrar y continuar</li>
+        </ol>
 
         <div class="setupParticipant">
-          <label for="participantCode">Codigo del participante</label>
+          <label for="participantCode">Código del participante</label>
           <div class="setupInlineControl">
-            <input id="participantCode" autocomplete="off" maxlength="40" placeholder="P001" />
-            <button id="createAnalysisSession" type="button">Crear sesion</button>
+            <input id="participantCode" autocomplete="off" maxlength="40" placeholder="Ej. P001" aria-describedby="participantHint" />
+            <button id="createAnalysisSession" type="button">Crear sesión</button>
           </div>
+          <p class="setupHint" id="participantHint">Utiliza el código asignado al participante, sin nombres ni apellidos.</p>
         </div>
 
         <div class="setupToolbar">
-          <button id="requestCameraPermission" type="button" disabled>Detectar camaras</button>
-          <button id="testAnalysisCameras" type="button" class="secondaryButton" disabled>Probar camaras</button>
-          <button id="calibrateAnalysis" type="button" class="secondaryButton" disabled>Calibrar</button>
+          <button id="requestCameraPermission" type="button" disabled>Conectar cámaras</button>
+          <button id="testAnalysisCameras" type="button" class="secondaryButton" disabled>Comprobar encuadre</button>
+          <button id="calibrateAnalysis" type="button" class="secondaryButton" disabled>Calibrar posición</button>
         </div>
 
         <div class="cameraSetupGrid">
@@ -87,49 +96,55 @@ export class EvaluationSetupView {
             <div class="cameraPanelHeading">
               <div>
                 <span>CAM 1</span>
-                <h2>Cabeza y tronco</h2>
+                <h2>Rostro y tren superior</h2>
               </div>
               <strong id="upperCameraStatus" data-tone="neutral">Sin configurar</strong>
             </div>
-            <label for="upperCameraSelect">Camara superior</label>
+            <label for="upperCameraSelect">Camara de rostro y tren superior (laptop)</label>
             <select id="upperCameraSelect" disabled></select>
             <div class="cameraPreview" id="upperCameraPreview">
-              <span>Vista previa no disponible</span>
+              <span>Conecta las cámaras para ver el encuadre</span>
             </div>
+            <p class="cameraGuidance"><strong>Frente al participante</strong>Encuadra la cabeza, los hombros y los brazos. Mantén el rostro iluminado.</p>
           </article>
 
           <article class="cameraSetupPanel">
             <div class="cameraPanelHeading">
               <div>
                 <span>CAM 2</span>
-                <h2>Cuerpo completo</h2>
+                <h2>Cuerpo y manos</h2>
               </div>
               <strong id="fullCameraStatus" data-tone="neutral">Sin configurar</strong>
             </div>
             <label for="fullCameraSelect">Camara externa</label>
             <select id="fullCameraSelect" disabled></select>
             <div class="cameraPreview" id="fullCameraPreview">
-              <span>Vista previa no disponible</span>
+              <span>Selecciona una cámara externa diferente</span>
             </div>
+            <p class="cameraGuidance"><strong>Vista amplia del cuerpo</strong>Coloca la cámara a distancia para incluir manos, piernas y pies.</p>
           </article>
         </div>
 
         <div class="calibrationStrip">
           <div>
-            <strong>Calibracion frontal</strong>
-            <span id="analysisSetupMessage">Crea una sesion para comenzar.</span>
+            <strong>Tu siguiente paso</strong>
+            <span id="analysisSetupMessage" role="status">Crea una sesión para habilitar la conexión de cámaras.</span>
           </div>
-          <progress id="calibrationProgress" max="100" value="0"></progress>
+          <progress id="calibrationProgress" max="100" value="0" aria-label="Progreso de calibración"></progress>
         </div>
 
         <footer class="setupFooter">
-          <p>Los videos se procesan localmente y no se guardan.</p>
-          <button id="continueToScenarios" type="button" disabled>Continuar a escenarios</button>
+          <p><strong>Privacidad durante toda la sesión</strong><br />El video se procesa en este equipo y no se guarda.</p>
+          <button id="continueToScenarios" type="button" disabled>Elegir escenario →</button>
         </footer>
       </section>
     `;
     document.body.appendChild(root);
     this.root = root;
+    const detection = document.createElement("p");
+    detection.id = "visionDetectionStatus";
+    detection.setAttribute("role", "status");
+    root.querySelector(".cameraSetupGrid")?.after(detection);
     this.captureElements();
     this.registerHandlers();
   }
@@ -159,23 +174,37 @@ export class EvaluationSetupView {
   }
 
   updateLandmarks(landmarks: AnalysisDebugLandmarks): void {
+    const status = this.root?.querySelector("#visionDetectionStatus");
+    if (status) {
+      const labels: [string, boolean][] = [
+        ["Rostro", Boolean(landmarks.upperFace?.length)],
+        ["Ojos", landmarks.eyesDetected === true],
+        ["Hombros y brazos (CAM1)", [11,12,13,14,15,16].every(i => (landmarks.upperPose?.[i]?.visibility ?? 0) >= ANALYSIS_CONFIG.mediaPipe.minimumVisibility)],
+        ["Pose", landmarks.fullBodyDiagnostics.poseDetected && landmarks.fullBodyDiagnostics.visibleJointCount > 0],
+        ["Mano izquierda", Boolean(landmarks.hands?.some(h => h.side === "left"))],
+        ["Mano derecha", Boolean(landmarks.hands?.some(h => h.side === "right"))]
+      ];
+      status.textContent = labels.map(([label, ok]) => `${label}: ${ok ? "detectado" : "sin detección"}`).join(" · ")
+        + (landmarks.handError ? ` · ${landmarks.handError}` : "");
+    }
     drawPreviewLandmarks(
       this.upperLandmarkCanvas,
       this.upperVideo,
       landmarks.upperPose,
-      landmarks.upperFace
+      landmarks.upperFace, null, [], landmarks.headOrientation ?? null, this.debug, true
     );
     drawPreviewLandmarks(
       this.fullLandmarkCanvas,
       this.fullVideo,
       landmarks.fullBodyPose,
       null,
-      this.debug ? landmarks.fullBodyDiagnostics : null
+      this.debug ? landmarks.fullBodyDiagnostics : null, landmarks.hands ?? [], null, this.debug
     );
   }
 
   setSessionCreated(participantCode: string): void {
     this.sessionCreated = true;
+    this.updateSteps(2);
 
     if (this.participantInput) {
       this.participantInput.value = participantCode;
@@ -193,6 +222,7 @@ export class EvaluationSetupView {
 
   updateCameraStatus(status: PhysicalCameraManagerStatus): void {
     this.upperCameraActive = status.upperBody.streamActive;
+    if (this.sessionCreated) this.updateSteps(this.calibrated ? 4 : this.upperCameraActive ? 3 : 2);
     this.populateSelect(this.upperSelect, status.devices, status.upperBody.selectedDeviceId, false);
     this.populateSelect(this.fullSelect, status.devices, status.fullBody.selectedDeviceId, true);
 
@@ -235,6 +265,8 @@ export class EvaluationSetupView {
 
   setCalibrated(): void {
     this.calibrated = true;
+    this.updateSteps(4);
+    this.setMessage("Todo listo. Puedes elegir el escenario para comenzar.");
 
     if (this.calibrateButton) {
       this.calibrateButton.textContent = "Calibrado";
@@ -249,7 +281,7 @@ export class EvaluationSetupView {
       return;
     }
 
-    this.backendStatus.textContent = connected ? "API conectada" : "API sin conexion";
+    this.backendStatus.textContent = connected ? "Servidor conectado" : "Servidor sin conexión";
     this.backendStatus.dataset.tone = connected ? "success" : "warning";
   }
 
@@ -278,6 +310,15 @@ export class EvaluationSetupView {
     this.fullVideo = null;
     this.upperLandmarkCanvas = null;
     this.fullLandmarkCanvas = null;
+  }
+
+  private updateSteps(current: number): void {
+    this.root?.querySelectorAll<HTMLElement>("[data-step]").forEach(step => {
+      const number = Number(step.dataset.step);
+      step.dataset.complete = String(number < current);
+      if (number === current) step.setAttribute("aria-current", "step");
+      else step.removeAttribute("aria-current");
+    });
   }
 
   private captureElements(): void {
@@ -454,7 +495,11 @@ function drawPreviewLandmarks(
   video: HTMLVideoElement | null,
   pose: AnalysisDebugLandmarks["upperPose"],
   face: AnalysisDebugLandmarks["upperFace"],
-  diagnostics: FullBodyPreviewDiagnostics | null = null
+  diagnostics: FullBodyPreviewDiagnostics | null = null,
+  hands: HandDetection[] = [],
+  head: HeadOrientation | null = null,
+  debug = false,
+  upperBodyOnly = false
 ): void {
   if (!canvas || !video) {
     return;
@@ -484,7 +529,7 @@ function drawPreviewLandmarks(
 
   context.clearRect(0, 0, canvas.width, canvas.height);
 
-  const detectionVisible = hasVisibleLandmarks(pose, face);
+  const detectionVisible = hasVisibleLandmarks(pose, face) || hands.length > 0;
 
   if (!detectionVisible) {
     context.fillStyle = "rgba(7, 19, 29, 0.72)";
@@ -524,9 +569,10 @@ function drawPreviewLandmarks(
         y: viewportY,
         width: viewportWidth,
         height: viewportHeight,
-        mirrorX: true
+        mirrorX: true,
+        upperBodyOnly
       },
-      pixelRatio
+      pixelRatio, hands, head, debug
     );
   }
 

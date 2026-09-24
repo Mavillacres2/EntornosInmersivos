@@ -21,6 +21,17 @@ type AsyncRoute = (
 ) => Promise<void>;
 
 const sessionIdSchema = z.uuid();
+const sessionListQuerySchema = z.object({
+  participantCode: z.string().trim().max(40).optional(),
+  status: z.enum(["active", "finished"]).optional(),
+  dateFrom: z.iso.datetime().optional(),
+  dateTo: z.iso.datetime().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().min(5).max(100).default(10)
+});
+const timelineQuerySchema = z.object({
+  maxPoints: z.coerce.number().int().min(50).max(2000).default(600)
+});
 
 export function createApiRouter(
   config: AppConfig,
@@ -51,6 +62,28 @@ export function createApiRouter(
       const session = await service.createSession(payload);
 
       response.status(201).json({ session });
+    })
+  );
+
+  router.get(
+    "/sessions",
+    asyncRoute(async (request, response) => {
+      const query = sessionListQuerySchema.parse(request.query);
+      const result = await service.listSessions({
+        ...query,
+        dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
+        dateTo: query.dateTo ? new Date(query.dateTo) : undefined
+      });
+      response.json(result);
+    })
+  );
+
+  router.get(
+    "/sessions/:sessionId/timeline",
+    asyncRoute(async (request, response) => {
+      const sessionId = parseSessionId(request.params.sessionId);
+      const { maxPoints } = timelineQuerySchema.parse(request.query);
+      response.json(await service.getSessionTimeline(sessionId, maxPoints));
     })
   );
 

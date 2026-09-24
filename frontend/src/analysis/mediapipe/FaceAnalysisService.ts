@@ -1,16 +1,19 @@
 import { FaceLandmarker } from "@mediapipe/tasks-vision";
 import type {
   FaceLandmarkerResult,
-  NormalizedLandmark
 } from "@mediapipe/tasks-vision";
 
+import { VISION_CONFIG } from "../config/AnalysisConfig";
+import { BlinkFeatureExtractor } from "../features/BlinkFeatureExtractor";
+import { headOrientationFromMatrix } from "../features/VisionGeometry";
+import type { EyeMetrics, BlinkEvent } from "../types/AnalysisTypes";
 import type { HeadOrientation } from "../types/AnalysisTypes";
 
-const RAD_TO_DEG = 180 / Math.PI;
-const DEBUG_FACE_INDICES = [1, 33, 61, 263, 291] as const;
 type VisionFileset = Parameters<typeof FaceLandmarker.createFromOptions>[0];
 
 export interface FaceAnalysisFrame {
+  eyes?: EyeMetrics | null;
+  blinkEvents?: BlinkEvent[];
   orientation: HeadOrientation | null;
   landmarks: Array<{
     x: number;
@@ -23,6 +26,9 @@ export interface FaceAnalysisFrame {
 export class FaceAnalysisService {
   private landmarker: FaceLandmarker | null = null;
   private lastTimestampMs = -Infinity;
+  private readonly blink = new BlinkFeatureExtractor();
+  private smoothed: HeadOrientation | null = null;
+  private lastVideoTime = -1;
 
   async initialize(fileset: VisionFileset, modelUrl: string): Promise<void> {
     this.close();
@@ -38,7 +44,7 @@ export class FaceAnalysisService {
   analyze(
     video: HTMLVideoElement,
     timestampMs: number,
-    includeDebugLandmarks = false
+    _includeDebugLandmarks = false
   ): FaceAnalysisFrame {
     if (
       !this.landmarker ||
@@ -46,27 +52,67 @@ export class FaceAnalysisService {
       video.videoWidth <= 0 ||
       video.videoHeight <= 0
     ) {
-      return { orientation: null, landmarks: null };
+      return this.unavailable();
     }
 
     const monotonicTimestamp = Math.max(timestampMs, this.lastTimestampMs + 0.001);
 
     this.lastTimestampMs = monotonicTimestamp;
-    const result = this.landmarker.detectForVideo(video, monotonicTimestamp);
+    if (video.currentTime === this.lastVideoTime) return this.unavailable();
+    this.lastVideoTime = video.currentTime;
+    try {
+      const result = this.landmarker.detectForVideo(video, monotonicTimestamp);
+      const raw = result.faceLandmarks[0];
+      if (!raw?.length || raw.some(p => ![p.x, p.y, p.z].every(Number.isFinite))) return this.unavailable();
+      const orientation = this.readTransformation(result);
+      if (orientation) {
+        for (const axis of ["yaw", "pitch", "roll"] as const) {
+          const previous = this.smoothed?.[axis];
+          if (previous !== undefined) {
+            const delta = ((orientation[axis] - previous + 540) % 360) - 180;
+            orientation[axis] = previous + (Math.abs(delta) < VISION_CONFIG.orientationDeadbandDegrees
+              ? 0 : VISION_CONFIG.orientationSmoothing * delta);
+          }
+        }
+      }
+      this.smoothed = orientation;
+      const categories = result.faceBlendshapes[0]?.categories ?? [];
+      const score = (name: string) => categories.find(c => c.categoryName === name)?.score ?? null;
+      // Require eye contours inside the image; blendshape scores are not confidence.
+      const eyesVisible = orientation !== null &&
+        Math.abs(orientation.yaw) <= VISION_CONFIG.blinkMaxAbsYaw &&
+        Math.abs(orientation.pitch) <= VISION_CONFIG.blinkMaxAbsPitch &&
+        [33, 133, 159, 145, 263, 362, 386, 374].every(i => {
+        const p = raw[i]; return p && p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1;
+      });
+      const blink = this.blink.extract(eyesVisible ? score("eyeBlinkLeft") : null,
+        eyesVisible ? score("eyeBlinkRight") : null, timestampMs);
+      return { orientation, landmarks: raw.map(p => ({ x: p.x, y: p.y, z: p.z, visibility: 1 })),
+        eyes: blink.eyes, blinkEvents: blink.events };
+    } catch (error) {
+      console.warn("No se pudo analizar el rostro.", error);
+      return this.unavailable();
+    }
+  }
 
-    return {
-      orientation:
-        this.readTransformation(result) ?? this.estimateFromLandmarks(result),
-      landmarks: includeDebugLandmarks
-        ? this.readDebugLandmarks(result)
-        : null
-    };
+  resetTracking(resetMetrics = true): void {
+    if (resetMetrics) this.blink.reset();
+    else this.blink.markUnavailable();
+    this.smoothed = null;
+    this.lastVideoTime = -1;
+  }
+
+  private unavailable(): FaceAnalysisFrame {
+    this.blink.markUnavailable();
+    this.smoothed = null;
+    return { orientation: null, landmarks: null, eyes: null, blinkEvents: [] };
   }
 
   close(): void {
     this.landmarker?.close();
     this.landmarker = null;
     this.lastTimestampMs = -Infinity;
+    this.resetTracking();
   }
 
   private createLandmarker(
@@ -81,86 +127,16 @@ export class FaceAnalysisService {
       },
       runningMode: "VIDEO",
       numFaces: 1,
-      minFaceDetectionConfidence: 0.5,
-      minFacePresenceConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-      outputFaceBlendshapes: false,
+      minFaceDetectionConfidence: VISION_CONFIG.faceConfidence,
+      minFacePresenceConfidence: VISION_CONFIG.faceConfidence,
+      minTrackingConfidence: VISION_CONFIG.faceConfidence,
+      outputFaceBlendshapes: true,
       outputFacialTransformationMatrixes: true
     });
   }
 
   private readTransformation(result: FaceLandmarkerResult): HeadOrientation | null {
     const matrix = result.facialTransformationMatrixes[0];
-
-    if (!matrix || matrix.data.length < 11) {
-      return null;
-    }
-
-    const values = matrix.data;
-    const r00 = values[0] ?? 1;
-    const r10 = values[1] ?? 0;
-    const r20 = values[2] ?? 0;
-    const r21 = values[6] ?? 0;
-    const r22 = values[10] ?? 1;
-
-    return {
-      yaw: Math.atan2(r10, r00) * RAD_TO_DEG,
-      pitch:
-        Math.atan2(-r20, Math.sqrt(r00 * r00 + r10 * r10)) * RAD_TO_DEG,
-      roll: Math.atan2(r21, r22) * RAD_TO_DEG
-    };
+    return matrix ? headOrientationFromMatrix(matrix.data) : null;
   }
-
-  private estimateFromLandmarks(
-    result: FaceLandmarkerResult
-  ): HeadOrientation | null {
-    const landmarks = result.faceLandmarks[0];
-    const leftEye = landmarks?.[33];
-    const rightEye = landmarks?.[263];
-    const nose = landmarks?.[1];
-
-    if (!leftEye || !rightEye || !nose) {
-      return null;
-    }
-
-    const eyeDistance = distance2d(leftEye, rightEye);
-
-    if (eyeDistance < 0.001) {
-      return null;
-    }
-
-    const eyeMidX = (leftEye.x + rightEye.x) / 2;
-    const eyeMidY = (leftEye.y + rightEye.y) / 2;
-
-    return {
-      yaw: Math.atan2(nose.x - eyeMidX, eyeDistance) * RAD_TO_DEG,
-      pitch: Math.atan2(nose.y - eyeMidY, eyeDistance) * RAD_TO_DEG,
-      roll: Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x) * RAD_TO_DEG
-    };
-  }
-
-  private readDebugLandmarks(
-    result: FaceLandmarkerResult
-  ): FaceAnalysisFrame["landmarks"] {
-    const landmarks = result.faceLandmarks[0];
-
-    if (!landmarks) {
-      return null;
-    }
-
-    return DEBUG_FACE_INDICES.flatMap((index) => {
-      const landmark = landmarks[index];
-
-      return landmark
-        ? [{ x: landmark.x, y: landmark.y, z: landmark.z, visibility: 1 }]
-        : [];
-    });
-  }
-}
-
-function distance2d(
-  first: NormalizedLandmark,
-  second: NormalizedLandmark
-): number {
-  return Math.hypot(first.x - second.x, first.y - second.y);
 }

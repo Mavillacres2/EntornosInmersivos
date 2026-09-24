@@ -1,3 +1,4 @@
+import { VISION_CONFIG } from "../config/AnalysisConfig";
 import { PoseLandmarker } from "@mediapipe/tasks-vision";
 import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
 
@@ -136,9 +137,9 @@ export class PoseAnalysisService {
       },
       runningMode: "VIDEO",
       numPoses: 1,
-      minPoseDetectionConfidence: 0.5,
-      minPosePresenceConfidence: 0.5,
-      minTrackingConfidence: 0.5,
+      minPoseDetectionConfidence: VISION_CONFIG.poseConfidence,
+      minPosePresenceConfidence: VISION_CONFIG.poseConfidence,
+      minTrackingConfidence: VISION_CONFIG.poseConfidence,
       outputSegmentationMasks: false
     });
   }

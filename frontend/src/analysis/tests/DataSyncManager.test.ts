@@ -1,3 +1,9 @@
+import { unavailableHeadFeatures } from "../features/HeadFeatureExtractor";
+import { unavailableTrunkFeatures } from "../features/TrunkFeatureExtractor";
+import { unavailableFullBodyFeatures } from "../features/FullBodyFeatureExtractor";
+import { unavailableMovementFeatures } from "../features/MovementFeatureExtractor";
+import type { VisionMetrics } from "../types/AnalysisTypes";
+import type { BehaviorSample } from "../types/BehaviorTypes";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AnalysisApiClient } from "../api/AnalysisApiClient";
@@ -16,6 +22,29 @@ describe("DataSyncManager", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+  });
+
+  it("copia m?tricas, preserva contexto y convierte timestamps de inferencia a sesi?n", async () => {
+    const sendBehaviorBatch = vi.fn(async (_id: string, _samples: BehaviorSample[]) => undefined);
+    const adapter = new ActivityContextAdapter();
+    adapter.startSession("session-1", 1000);
+    adapter.setScenario("classroom", "go-no-go");
+    const manager = new DataSyncManager(adapter,
+      { sendBehaviorBatch, sendEventBatch: async () => undefined } as unknown as AnalysisApiClient,
+      { ensureRemoteSession: async () => true, getSession: () => ({ sessionId: "session-1" }) } as unknown as AnalysisSessionManager,
+      ANALYSIS_CONFIG);
+    const vision: VisionMetrics = { face: { source: "face-camera", timestampMs: 1100, eyes: null }, body: null };
+    manager.recordFeatures({ head: unavailableHeadFeatures(), trunk: unavailableTrunkFeatures(),
+      fullBody: unavailableFullBodyFeatures(), motorActivity: unavailableMovementFeatures(),
+      performance: { upperAnalysisFps: 8, fullBodyAnalysisFps: 4, renderFps: 60 }, vision });
+    vision.face!.timestampMs = 9999;
+    adapter.setScenario("space-station", "cpt");
+    expect(await manager.flushFinal()).toBe(true);
+    expect(sendBehaviorBatch.mock.calls[0]?.[1][0]).toMatchObject({
+      scenarioId: "classroom", activityId: "go-no-go", trunkSource: "upper-camera",
+      vision: { face: { timestampMs: 100 } }
+    });
+    manager.dispose();
   });
 
   it("conserva el contexto original al cerrar un distractor", async () => {

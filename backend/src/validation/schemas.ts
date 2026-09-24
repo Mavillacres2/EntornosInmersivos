@@ -77,8 +77,34 @@ export const movementFeaturesSchema = z
   })
   .strict();
 
+const eyeMetricsSchema = z.object({
+  timestampMs: finiteNumber.nonnegative(), leftOpen: finiteNumber.min(0).max(1), rightOpen: finiteNumber.min(0).max(1),
+  leftBlink: z.boolean(), rightBlink: z.boolean(), blinkCount: z.number().int().nonnegative(),
+  leftBlinkCount: z.number().int().nonnegative(), rightBlinkCount: z.number().int().nonnegative(),
+  blinksPerMinute: finiteNumber.nonnegative().nullable(), averageBlinkDuration: finiteNumber.nonnegative().nullable(),
+  observedMs: finiteNumber.nonnegative()
+}).strict();
+
+export const visionMetricsSchema = z.object({
+  face: z.object({ source: z.literal("face-camera"), timestampMs: finiteNumber.nonnegative(),
+    eyes: eyeMetricsSchema.nullable() }).strict().nullable(),
+  body: z.object({ source: z.literal("body-camera"), timestampMs: finiteNumber.nonnegative(),
+    poseTimestampMs: finiteNumber.nonnegative().nullable(),
+    handsTimestampMs: finiteNumber.nonnegative().nullable(),
+    torsoLateralTiltDegrees: nullableFiniteNumber,
+    hands: z.array(z.object({
+      side: z.enum(["left", "right"]), handednessConfidence: finiteNumber.min(0).max(1),
+      position: z.object({ x: finiteNumber.min(0).max(1), y: finiteNumber.min(0).max(1) }).strict(),
+      speed: finiteNumber.nonnegative().nullable(), travelDistance: finiteNumber.nonnegative(),
+      openness: finiteNumber.min(0).max(1).nullable()
+    }).strict()).max(2)
+  }).strict().nullable()
+}).strict();
+
 export const behaviorSampleSchema = z
   .object({
+    vision: visionMetricsSchema.optional(),
+    trunkSource: z.enum(["body-camera", "upper-camera"]).optional(),
     sampleId: z.uuid(),
     sessionId: z.uuid(),
     elapsedMs: finiteNumber.nonnegative(),
@@ -126,6 +152,7 @@ export const behaviorSampleSchema = z
   .strict();
 
 export const behaviorEventTypeSchema = z.enum([
+  "BLINK",
   "OFF_TASK_ORIENTATION_START",
   "OFF_TASK_ORIENTATION_END",
   "HEAD_TURN",
@@ -155,6 +182,9 @@ export const behaviorEventSchema = z
     trialNumber: z.number().int().positive().nullable(),
     details: z
       .object({
+        eye: z.enum(["left", "right", "both"]).optional(),
+        startTime: finiteNumber.nonnegative().optional(),
+        endTime: finiteNumber.nonnegative().optional(),
         distractorId: nullableShortString.optional(),
         distractorType: nullableShortString.optional(),
         durationMs: nullableFiniteNumber.optional(),

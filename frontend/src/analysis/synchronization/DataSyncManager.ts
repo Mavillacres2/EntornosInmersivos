@@ -1,6 +1,7 @@
 import type { AnalysisApiClient } from "../api/AnalysisApiClient";
 import { BehaviorDataBuffer } from "../buffer/BehaviorDataBuffer";
 import type { AnalysisConfig } from "../config/AnalysisConfig";
+import type { VisionMetrics } from "../types/AnalysisTypes";
 import type { AnalysisPerformanceSnapshot } from "../types/AnalysisTypes";
 import type {
   ActivityResultEnvelope,
@@ -20,6 +21,7 @@ import type {
 } from "./ActivityContextAdapter";
 
 interface SynchronizedFeatures {
+  vision?: VisionMetrics;
   head: HeadBehaviorFeatures;
   trunk: TrunkBehaviorFeatures;
   fullBody: FullBodyBehaviorFeatures;
@@ -128,10 +130,23 @@ export class DataSyncManager {
       },
       fullBodyCamera: features.fullBody,
       motorActivity: features.motorActivity,
-      analysisPerformance: features.performance
+      analysisPerformance: features.performance,
+      ...(features.vision ? { vision: this.toSessionVision(features.vision), trunkSource: "upper-camera" as const } : {})
     };
 
     this.buffer.pushSample(sample);
+  }
+
+  private toSessionVision(vision: VisionMetrics): VisionMetrics {
+    const elapsed = (timestamp: number) => this.adapter.getContext(timestamp).elapsedSessionTimeMs;
+    return {
+      face: vision.face ? { ...vision.face, timestampMs: elapsed(vision.face.timestampMs),
+        eyes: vision.face.eyes ? { ...vision.face.eyes, timestampMs: elapsed(vision.face.eyes.timestampMs) } : null } : null,
+      body: vision.body ? { ...vision.body, timestampMs: elapsed(vision.body.timestampMs),
+        poseTimestampMs: vision.body.poseTimestampMs === null ? null : elapsed(vision.body.poseTimestampMs),
+        handsTimestampMs: vision.body.handsTimestampMs === null ? null : elapsed(vision.body.handsTimestampMs),
+        hands: vision.body.hands.map(hand => ({ ...hand, position: { ...hand.position } })) } : null
+    };
   }
 
   recordBehaviorEvent(
