@@ -174,6 +174,18 @@ export class AnalysisApplicationController {
     };
   }
 
+  getPerformanceProbeSnapshot(): {
+    analysis: ReturnType<BehaviorTrackingManager["getPerformance"]>;
+    cameras: Record<string, unknown>;
+    inference: Record<string, unknown>;
+  } {
+    return {
+      analysis: this.trackingManager.getPerformance(),
+      cameras: this.cameraManager.getVideoDiagnostics(),
+      inference: this.mediaPipeManager.getPerformanceDiagnostics()
+    };
+  }
+
   private async createSession(participantCode: string): Promise<void> {
     const session = await this.sessionManager.createSession(participantCode);
 

@@ -7,6 +7,30 @@ import {
   createSessionSchema,
   headFeaturesSchema
 } from "../validation/schemas.js";
+import { visionMetricsSchema, behaviorEventSchema } from "../validation/schemas.js";
+
+test("vision accepts bounded derived metrics and rejects images, raw landmarks and invalid scores", () => {
+  const vision = { face: null, body: {
+    source: "body-camera", timestampMs: 500, poseTimestampMs: 400, handsTimestampMs: 500,
+    torsoLateralTiltDegrees: 10,
+    hands: [{ side: "left", handednessConfidence: 0.9, position: { x: 0.5, y: 0.4 },
+      speed: 0.1, travelDistance: 0.2, openness: 0.8 }]
+  } };
+  assert.equal(visionMetricsSchema.safeParse(vision).success, true);
+  assert.equal(visionMetricsSchema.safeParse({ ...vision, image: "raw" }).success, false);
+  assert.equal(visionMetricsSchema.safeParse({ ...vision, body: { ...vision.body, landmarks: [] } }).success, false);
+  vision.body.hands[0]!.handednessConfidence = 2;
+  assert.equal(visionMetricsSchema.safeParse(vision).success, false);
+});
+
+test("blink event preserves session-relative timing and eye", () => {
+  const event = { eventId: "00000000-0000-4000-8000-000000000001",
+    sessionId: "00000000-0000-4000-8000-000000000002", elapsedMs: 200,
+    occurredAt: new Date(0).toISOString(), type: "BLINK", scenarioId: null,
+    activityId: null, blockNumber: null, condition: null, trialNumber: null,
+    details: { eye: "both", startTime: 100, endTime: 200, durationMs: 100 } };
+  assert.equal(behaviorEventSchema.safeParse(event).success, true);
+});
 
 test("privacy filter rejects multimedia but permits frame timing metrics", () => {
   assert.equal(containsForbiddenMediaData({ frameData: [1, 2, 3] }), true);

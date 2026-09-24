@@ -1,3 +1,6 @@
+import { calculateBodyAxis } from "../features/VisionGeometry";
+import { HandFeatureExtractor } from "../features/HandFeatureExtractor";
+import type { HandDetection, HeadOrientation, VisionMetrics } from "../types/AnalysisTypes";
 import type { CameraManager } from "../cameras/CameraManager";
 import type { PhysicalCameraRole } from "../cameras/CameraTypes";
 import type { AnalysisConfig } from "../config/AnalysisConfig";
@@ -45,6 +48,10 @@ export interface CameraQualityReport {
 }
 
 export interface AnalysisDebugLandmarks {
+  hands?: HandDetection[];
+  headOrientation?: HeadOrientation | null;
+  eyesDetected?: boolean;
+  handError?: string | null;
   upperPose: LandmarkPoint[] | null;
   upperFace: LandmarkPoint[] | null;
   fullBodyPose: LandmarkPoint[] | null;
@@ -82,6 +89,11 @@ export type AnalysisPreviewListener = (
 ) => void;
 
 export class BehaviorTrackingManager {
+  private latestHands: HandDetection[] = [];
+  private latestHeadOrientation: HeadOrientation | null = null;
+  private latestVision: VisionMetrics = { face: null, body: null };
+  private readonly handExtractor = new HandFeatureExtractor();
+  private handError: string | null = null;
   private readonly orientationExtractor: OrientationFeatureExtractor;
   private readonly headExtractor: HeadFeatureExtractor;
   private readonly trunkExtractor: TrunkFeatureExtractor;
@@ -192,6 +204,8 @@ export class BehaviorTrackingManager {
     this.latestUpperFaceDebug = null;
     this.latestFullBodyPoseDebug = null;
     this.latestFullBodyDiagnostics = unavailableFullBodyDiagnostics();
+    this.latestHands = [];
+    this.latestHeadOrientation = null;
   }
 
   async checkCameraPosition(sampleCount = 8): Promise<CameraQualityReport> {
@@ -205,8 +219,16 @@ export class BehaviorTrackingManager {
       let fullBodyAdequateFrames = 0;
       let upperAvailableFrames = 0;
       let fullBodyAvailableFrames = 0;
+      let previousSampleAt = -Infinity;
+      const generation = this.previewGeneration;
 
       for (let index = 0; index < sampleCount; index += 1) {
+        while (performance.now() - previousSampleAt < 1000 / this.config.mediaPipe.upperAnalysisFps) {
+          if (generation !== this.previewGeneration) throw new Error("Prueba de cámaras cancelada.");
+          await nextAnimationFrame();
+        }
+        if (generation !== this.previewGeneration) throw new Error("Prueba de cámaras cancelada.");
+        previousSampleAt = performance.now();
         if (isVideoReadyForAnalysis(upperVideo)) {
           const upper = this.mediaPipeManager.analyzeUpperBody(
             upperVideo,
@@ -219,6 +241,7 @@ export class BehaviorTrackingManager {
           if (
             upper.faceDetected &&
             upper.poseLandmarks &&
+            (upper.poseQuality ?? upper.quality) === "good" &&
             upper.quality !== "unavailable"
           ) {
             upperAdequateFrames += 1;
@@ -257,8 +280,8 @@ export class BehaviorTrackingManager {
           adequate: upperRatio >= 0.6,
           message:
             upperRatio >= 0.6
-              ? "Posicion adecuada para cabeza y tronco."
-              : "Ajusta tu posicion frente a la camara superior.",
+              ? "Posicion adecuada para rostro y tren superior."
+              : "Ajusta tu posicion frente a la camara facial.",
           quality: qualityFromRatio(upperRatio, upperAvailableFrames > 0)
         },
         fullBody: {
@@ -279,6 +302,7 @@ export class BehaviorTrackingManager {
     onProgress?: (progress: number) => void
   ): Promise<HeadCalibration> {
     const resumePreview = this.suspendCameraPreview();
+    const generation = this.previewGeneration;
 
     this.state = "calibrating";
     try {
@@ -298,6 +322,7 @@ export class BehaviorTrackingManager {
       let lastSampleAt = 0;
 
       while (performance.now() - startedAt < this.config.calibrationDurationMs) {
+        if (generation !== this.previewGeneration) throw new Error("Calibración cancelada.");
         const now = performance.now();
 
         if (now - lastSampleAt >= intervalMs) {
@@ -351,9 +376,21 @@ export class BehaviorTrackingManager {
       return;
     }
 
+    const resuming = this.state === "paused";
     this.stopCameraPreview();
-    this.mediaPipeManager.resetUpperBodyAnalysis();
+    this.mediaPipeManager.resetUpperBodyAnalysis(!resuming);
+    this.mediaPipeManager.resetBodyAnalysis();
+    if (!resuming) this.handExtractor.reset();
+    else this.handExtractor.extract([], performance.now());
+    this.latestVision = { face: null, body: null };
+    this.latestHands = [];
     this.state = "analyzing";
+    this.headExtractor.markUnavailable();
+    this.trunkExtractor.markUnavailable();
+    this.fullBodyExtractor.markUnavailable();
+    this.latestHead = unavailableHeadFeatures();
+    this.latestTrunk = unavailableTrunkFeatures();
+    this.latestFullBody = unavailableFullBodyFeatures();
     this.dataSyncManager.start();
     this.lastUpperAnalysisAt = 0;
     this.lastFullBodyAnalysisAt = 0;
@@ -373,7 +410,12 @@ export class BehaviorTrackingManager {
     this.cancelAnimationFrame();
   }
 
+  resume(): void {
+    if (this.state === "paused") this.start();
+  }
+
   stop(): void {
+    this.stopCameraPreview();
     this.state = "stopping";
     this.cancelAnimationFrame();
     this.state = "finished";
@@ -393,6 +435,10 @@ export class BehaviorTrackingManager {
 
   getDebugLandmarks(): AnalysisDebugLandmarks {
     return {
+      hands: this.latestHands,
+      headOrientation: this.latestHeadOrientation,
+      eyesDetected: this.latestVision.face?.eyes != null,
+      handError: this.handError,
       upperPose: this.latestUpperPoseDebug,
       upperFace: this.latestUpperFaceDebug,
       fullBodyPose: this.latestFullBodyPoseDebug,
@@ -412,6 +458,8 @@ export class BehaviorTrackingManager {
     this.latestUpperFaceDebug = null;
     this.latestFullBodyPoseDebug = null;
     this.latestFullBodyDiagnostics = unavailableFullBodyDiagnostics();
+    this.latestHands = [];
+    this.latestHeadOrientation = null;
     this.respondedDistractors.clear();
   }
 
@@ -444,7 +492,7 @@ export class BehaviorTrackingManager {
   private processPreviewFrame(timestampMs: number): void {
     try {
       const upperInterval =
-        1000 / Math.max(1, this.config.mediaPipe.upperAnalysisFps);
+        1000 / Math.max(1, 2 * this.config.mediaPipe.upperAnalysisFps);
       const fullBodyInterval =
         1000 / Math.max(1, this.config.mediaPipe.fullBodyAnalysisFps);
       const upperDue =
@@ -471,9 +519,13 @@ export class BehaviorTrackingManager {
 
           this.latestUpperPoseDebug = frame.poseLandmarks;
           this.latestUpperFaceDebug = frame.faceLandmarks;
+          this.latestHeadOrientation = frame.headOrientation;
+          this.latestVision.face = { source: "face-camera", timestampMs, eyes: frame.eyes ?? null };
         } else {
           this.latestUpperPoseDebug = null;
           this.latestUpperFaceDebug = null;
+          this.latestVision.face = null;
+          this.latestHeadOrientation = null;
         }
       } else if (selectedRole === "full-body") {
         const video = this.cameraManager.getVideoElement("full-body");
@@ -484,9 +536,12 @@ export class BehaviorTrackingManager {
           const frame = this.mediaPipeManager.analyzeFullBody(video, timestampMs);
 
           this.latestFullBodyPoseDebug = frame.poseLandmarks;
+          this.latestHands = frame.hands ?? [];
+          this.handError = frame.handError ?? null;
           this.recordFullBodyDiagnostics(frame, video, timestampMs);
         } else {
           this.latestFullBodyPoseDebug = null;
+          this.latestHands = [];
           this.latestFullBodyDiagnostics = this.buildFullBodyDiagnostics(
             null,
             video
@@ -510,7 +565,7 @@ export class BehaviorTrackingManager {
       const renderFps = this.renderFpsProvider?.() ?? null;
       const performanceFactor = analysisPerformanceFactor(renderFps);
       const upperInterval =
-        1000 / Math.max(1, this.config.mediaPipe.upperAnalysisFps * performanceFactor);
+        1000 / Math.max(1, 2 * this.config.mediaPipe.upperAnalysisFps * performanceFactor);
       const fullBodyInterval =
         1000 /
         Math.max(1, this.config.mediaPipe.fullBodyAnalysisFps * performanceFactor);
@@ -541,7 +596,8 @@ export class BehaviorTrackingManager {
           trunk: this.latestTrunk,
           fullBody: this.latestFullBody,
           motorActivity: this.latestMovement,
-          performance: this.getPerformance()
+          performance: this.getPerformance(),
+          vision: this.latestVision
         });
       }
 
@@ -564,8 +620,10 @@ export class BehaviorTrackingManager {
       this.handleOrientationUnavailable(timestampMs);
       this.headExtractor.markUnavailable();
       this.trunkExtractor.markUnavailable();
-      this.latestHead = unavailableHeadFeatures();
       this.latestTrunk = unavailableTrunkFeatures();
+      this.latestVision.face = null;
+      this.latestHead = unavailableHeadFeatures();
+      this.latestHeadOrientation = null;
       this.latestUpperPoseDebug = null;
       this.latestUpperFaceDebug = null;
       return;
@@ -578,6 +636,21 @@ export class BehaviorTrackingManager {
     if (this.config.debug) {
       this.latestUpperPoseDebug = frame.poseLandmarks;
       this.latestUpperFaceDebug = frame.faceLandmarks;
+    }
+    this.latestHeadOrientation = frame.headOrientation;
+    if (frame.faceUpdated) this.latestVision.face = { source: "face-camera", timestampMs, eyes: frame.eyes ?? null };
+    if (frame.poseUpdated) {
+      const trunk = this.trunkExtractor.extract(frame.poseLandmarks, timestampMs, frame.poseQuality ?? frame.quality);
+      this.latestTrunk = trunk.features;
+      if (trunk.postureChangeDetected) this.dataSyncManager.recordBehaviorEvent("POSTURE_CHANGE");
+    }
+    for (const blink of frame.blinkEvents ?? []) {
+      const context = this.activityContext.getContext(blink.timestamp);
+      this.dataSyncManager.recordBehaviorEvent("BLINK", {
+        eye: blink.eye, durationMs: blink.durationMs,
+        startTime: this.activityContext.getContext(blink.startTime).elapsedSessionTimeMs,
+        endTime: context.elapsedSessionTimeMs
+      }, context.elapsedSessionTimeMs, context);
     }
     this.upperFrameCount += 1;
 
@@ -639,18 +712,6 @@ export class BehaviorTrackingManager {
       }
     }
 
-    if (frame.poseUpdated) {
-      const trunk = this.trunkExtractor.extract(
-        frame.poseLandmarks,
-        timestampMs,
-        frame.quality
-      );
-
-      this.latestTrunk = trunk.features;
-      if (trunk.postureChangeDetected) {
-        this.dataSyncManager.recordBehaviorEvent("POSTURE_CHANGE");
-      }
-    }
   }
 
   private processFullBody(timestampMs: number): void {
@@ -659,6 +720,9 @@ export class BehaviorTrackingManager {
     this.lastFullBodyAnalysisAt = timestampMs;
     if (!video.srcObject) {
       this.fullBodyExtractor.markUnavailable();
+      this.latestVision.body = null;
+      this.latestHands = [];
+      this.handExtractor.extract([], timestampMs);
       this.latestFullBody = unavailableFullBodyFeatures();
       this.latestFullBodyPoseDebug = null;
       this.latestFullBodyDiagnostics = this.buildFullBodyDiagnostics(null, video);
@@ -666,10 +730,22 @@ export class BehaviorTrackingManager {
     }
 
     const frame = this.mediaPipeManager.analyzeFullBody(video, timestampMs);
+    this.latestHands = frame.hands ?? [];
+    this.handError = frame.handError ?? null;
+    const axis = calculateBodyAxis(frame.poseLandmarks, this.config.mediaPipe.minimumVisibility,
+      video.videoHeight > 0 ? video.videoWidth / video.videoHeight : 1);
+    const hands = frame.handsUpdated !== false || this.latestHands.length === 0
+      ? this.handExtractor.extract(this.latestHands, frame.handsTimestampMs ?? timestampMs)
+      : this.latestVision.body?.hands ?? [];
+    this.latestVision.body = { source: "body-camera", timestampMs,
+      poseTimestampMs: frame.diagnostics.detectionTimestampMs,
+      handsTimestampMs: frame.handsTimestampMs ?? null, hands,
+      torsoLateralTiltDegrees: axis.torsoLateralTiltDegrees };
     this.recordFullBodyDiagnostics(frame, video, timestampMs);
     if (this.config.debug) {
       this.latestFullBodyPoseDebug = frame.poseLandmarks;
     }
+    if (frame.poseUpdated === false) return;
     const fullBody = this.fullBodyExtractor.extract(
       frame.poseLandmarks,
       frame.quality

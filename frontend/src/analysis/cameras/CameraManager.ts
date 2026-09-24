@@ -133,6 +133,13 @@ export class CameraManager {
     return this.slots[role].video;
   }
 
+  getVideoDiagnostics(): Record<PhysicalCameraRole, unknown> {
+    return {
+      "upper-body": this.buildVideoDiagnostics("upper-body"),
+      "full-body": this.buildVideoDiagnostics("full-body")
+    };
+  }
+
   getStatus(): PhysicalCameraManagerStatus {
     return {
       permissionGranted: this.permissionGranted,
@@ -194,6 +201,20 @@ export class CameraManager {
       error: null,
       stream: null,
       video
+    };
+  }
+
+  private buildVideoDiagnostics(role: PhysicalCameraRole): unknown {
+    const slot = this.slots[role];
+    const track = slot.stream?.getVideoTracks()[0];
+
+    return {
+      state: slot.state,
+      active: slot.stream?.active ?? false,
+      videoWidth: slot.video.videoWidth,
+      videoHeight: slot.video.videoHeight,
+      readyState: slot.video.readyState,
+      settings: track?.getSettings() ?? null
     };
   }
 

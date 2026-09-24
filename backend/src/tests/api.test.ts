@@ -87,10 +87,33 @@ test("CORS allows the Vite fallback port 5174", async (context) => {
   );
 });
 
+test("session listing validates filters and returns pagination", async (context) => {
+  let receivedPage = 0;
+  const { baseUrl } = await startTestApp(context, true, () => undefined, {
+    listSessions: async (query: { page: number }) => {
+      receivedPage = query.page;
+      return { items: [], pagination: { page: query.page, pageSize: 10, total: 0, totalPages: 0 } };
+    }
+  });
+  const response = await fetch(`${baseUrl}/api/sessions?page=2&pageSize=10&status=finished`);
+
+  assert.equal(response.status, 200);
+  assert.equal(receivedPage, 2);
+  assert.equal((await response.json() as { pagination: { page: number } }).pagination.page, 2);
+});
+
+test("session timeline rejects invalid identifiers", async (context) => {
+  const { baseUrl } = await startTestApp(context, true);
+  const response = await fetch(`${baseUrl}/api/sessions/not-a-uuid/timeline`);
+
+  assert.equal(response.status, 400);
+});
+
 async function startTestApp(
   context: test.TestContext,
   databaseAvailable: boolean,
-  onCreateSession: () => void = () => undefined
+  onCreateSession: () => void = () => undefined,
+  serviceOverrides: Partial<AnalysisService> = {}
 ): Promise<{ baseUrl: string }> {
   const database = {
     ping: async () => databaseAvailable
@@ -99,7 +122,8 @@ async function startTestApp(
     createSession: async (payload: unknown) => {
       onCreateSession();
       return payload;
-    }
+    },
+    ...serviceOverrides
   } as unknown as AnalysisService;
   const app = createApp(config, database, service);
   const server = app.listen(0);

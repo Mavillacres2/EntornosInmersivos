@@ -2,6 +2,7 @@ import type { Document } from "mongodb";
 
 import { ApiError } from "../middleware/errors.js";
 import type { AnalysisRepository } from "../repositories/AnalysisRepository.js";
+import type { SessionListQuery } from "../repositories/AnalysisRepository.js";
 import { buildSessionSummary } from "./SummaryService.js";
 import type {
   ActivityResultDto,
@@ -77,6 +78,24 @@ export class AnalysisService {
     }
 
     return session;
+  }
+
+  async listSessions(query: SessionListQuery): Promise<Document> {
+    const { items, total } = await this.repository.listSessions(query);
+    return {
+      items,
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: Math.ceil(total / query.pageSize)
+      }
+    };
+  }
+
+  async getSessionTimeline(sessionId: string, maxPoints: number): Promise<Document> {
+    await this.assertSessionExists(sessionId);
+    return this.repository.getSessionTimeline(sessionId, maxPoints);
   }
 
   private async assertSessionExists(sessionId: string): Promise<void> {

@@ -7,6 +7,7 @@ export interface AnalysisConfig {
     idealFrameRate: number;
   };
   mediaPipe: {
+    handModelUrl?: string;
     wasmBaseUrl: string;
     faceModelUrl: string;
     upperPoseModelUrl: string;
@@ -44,6 +45,8 @@ export const ANALYSIS_CONFIG: AnalysisConfig = {
     idealFrameRate: readNumber("VITE_CAMERA_IDEAL_FPS", 24)
   },
   mediaPipe: {
+    handModelUrl: import.meta.env.VITE_MEDIAPIPE_HAND_MODEL_URL ??
+      "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
     wasmBaseUrl:
       import.meta.env.VITE_MEDIAPIPE_WASM_URL ??
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm",
@@ -56,8 +59,8 @@ export const ANALYSIS_CONFIG: AnalysisConfig = {
     fullBodyPoseModelUrl:
       import.meta.env.VITE_MEDIAPIPE_FULL_POSE_MODEL_URL ??
       "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
-    upperAnalysisFps: readNumber("VITE_UPPER_ANALYSIS_FPS", 10),
-    fullBodyAnalysisFps: readNumber("VITE_FULL_BODY_ANALYSIS_FPS", 6),
+    upperAnalysisFps: readNumber("VITE_UPPER_ANALYSIS_FPS", 8),
+    fullBodyAnalysisFps: readNumber("VITE_FULL_BODY_ANALYSIS_FPS", 4),
     minimumVisibility: readNumber("VITE_LANDMARK_MIN_VISIBILITY", 0.55)
   },
   calibrationDurationMs: readNumber("VITE_CALIBRATION_DURATION_MS", 3000),
@@ -82,3 +85,21 @@ export const ANALYSIS_CONFIG: AnalysisConfig = {
     )
   }
 };
+
+// Experimental measurement settings, not clinical cutoffs.
+export const VISION_CONFIG = {
+  faceConfidence: 0.55,
+  poseConfidence: 0.55,
+  handConfidence: 0.6,
+  handednessConfidence: 0.7,
+  blinkCloseThreshold: 0.55,
+  blinkOpenThreshold: 0.3,
+  blinkMinDurationMs: 60,
+  blinkMaxDurationMs: 600,
+  blinkMaxSampleGapMs: 180,
+  blinkMaxAbsYaw: 40,
+  blinkMaxAbsPitch: 35,
+  detectionTimeoutMs: 750,
+  orientationSmoothing: 0.6,
+  orientationDeadbandDegrees: 0.35
+} as const;

@@ -4,11 +4,11 @@ import type { AnalysisConfig } from "../config/AnalysisConfig";
 import { MediaPipeManager } from "../mediapipe/MediaPipeManager";
 
 describe("MediaPipeManager performance scheduling", () => {
-  it("alterna Face y Pose de CAM1 sin ejecutarlos juntos", () => {
+  it("alterna Face y Pose en CAM1 y conserva landmarks sin repetir eventos", () => {
     const manager = new MediaPipeManager(TEST_CONFIG);
     const analyzeFace = vi.fn(() => ({
       orientation: { yaw: 0, pitch: 0, roll: 0 },
-      landmarks: null
+      landmarks: null, blinkEvents: [{ timestamp: 1, startTime: 0, endTime: 1, durationMs: 1, eye: "both" as const }]
     }));
     const analyzePose = vi.fn(() => ({
       landmarks: createLandmarks(),
@@ -24,18 +24,20 @@ describe("MediaPipeManager performance scheduling", () => {
       }
     }));
     const internals = manager as unknown as {
-      faceService: { analyze: typeof analyzeFace };
+      faceService: { analyze: typeof analyzeFace; resetTracking: () => void };
       upperPoseService: { analyze: typeof analyzePose };
     };
 
-    internals.faceService = { analyze: analyzeFace };
+    internals.faceService = { analyze: analyzeFace, resetTracking: vi.fn() };
     internals.upperPoseService = { analyze: analyzePose };
 
     const video = {
-      srcObject: {} as MediaStream
+      srcObject: {} as MediaStream, readyState: 2, videoWidth: 640, videoHeight: 480, currentTime: 0
     } as HTMLVideoElement;
     const first = manager.analyzeUpperBodyStaggered(video, 1);
+    video.currentTime = 0.1;
     const second = manager.analyzeUpperBodyStaggered(video, 2);
+    video.currentTime = 0.2;
     const third = manager.analyzeUpperBodyStaggered(video, 3);
 
     expect([first.faceUpdated, first.poseUpdated]).toEqual([true, false]);
@@ -43,6 +45,11 @@ describe("MediaPipeManager performance scheduling", () => {
     expect([third.faceUpdated, third.poseUpdated]).toEqual([true, false]);
     expect(analyzeFace).toHaveBeenCalledTimes(2);
     expect(analyzePose).toHaveBeenCalledTimes(1);
+    expect(second.poseLandmarks).toHaveLength(33);
+    expect(second.blinkEvents).toEqual([]);
+    const stale = manager.analyzeUpperBodyStaggered(video, 1000);
+    expect(stale.poseLandmarks).toBeNull();
+    expect(stale.headOrientation).toBeNull();
   });
 });
 

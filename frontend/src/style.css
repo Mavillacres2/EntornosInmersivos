@@ -8,6 +8,38 @@ body {
   background: #dedbd0;
 }
 
+:root {
+  --specialist-bg: #f2f6f7;
+  --specialist-panel: #ffffff;
+  --specialist-panel-soft: #f7fafb;
+  --specialist-ink: #152b35;
+  --specialist-muted: #60737c;
+  --specialist-line: #dbe5e8;
+  --specialist-primary: #147789;
+  --specialist-primary-strong: #0d5e6d;
+  --specialist-primary-soft: #e4f3f4;
+  --specialist-secondary: #52616a;
+  --specialist-success: #24714f;
+  --specialist-warning: #a06718;
+  --specialist-error: #a84444;
+  --specialist-shadow: 0 10px 32px rgba(28, 53, 63, 0.07);
+  --specialist-radius: 14px;
+  --specialist-space-1: 4px;
+  --specialist-space-2: 8px;
+  --specialist-space-3: 12px;
+  --specialist-space-4: 16px;
+  --specialist-space-6: 24px;
+  --specialist-space-8: 32px;
+  --specialist-space-12: 48px;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(25, 112, 128, 0.34);
+  outline-offset: 2px;
+}
+
 #renderCanvas {
   width: 100vw;
   height: 100vh;
@@ -15,6 +47,942 @@ body {
   position: fixed;
   inset: 0;
   outline: none;
+}
+
+#specialistApp {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: 276px minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--specialist-bg);
+  color: var(--specialist-ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#specialistApp h1,
+#specialistApp h2,
+#specialistApp h3,
+#specialistApp p {
+  letter-spacing: 0;
+}
+
+#specialistApp h1,
+#specialistApp h2,
+#specialistApp h3 {
+  margin: 0;
+}
+
+#specialistApp p {
+  margin: 0;
+  color: var(--specialist-muted);
+  line-height: 1.5;
+}
+
+#specialistApp button {
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font: 700 14px Arial, Helvetica, sans-serif;
+  padding: 0 16px;
+}
+
+#specialistApp button:disabled {
+  cursor: default;
+  opacity: 0.56;
+}
+
+.specialistSidebar {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+  padding: 22px 18px;
+  border-right: 1px solid var(--specialist-line);
+  background: #fbfdfc;
+}
+
+.specialistBrand {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.specialistBrandMark,
+.noticeIcon,
+.preparationIcon {
+  display: grid;
+  place-items: center;
+  background: #d9eff0;
+  color: var(--specialist-primary-strong);
+}
+
+.specialistBrandMark {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.specialistBrand strong,
+.specialistBrand span {
+  display: block;
+}
+
+.specialistBrand strong {
+  color: var(--specialist-ink);
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.specialistBrand span {
+  margin-top: 2px;
+  color: var(--specialist-muted);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.specialistNav {
+  display: grid;
+  gap: 8px;
+}
+
+.specialistNav button {
+  width: 100%;
+  background: transparent;
+  color: #40545c;
+  text-align: left;
+}
+
+.specialistNav button:hover:not(:disabled),
+.specialistNav button[aria-current="page"] {
+  background: #e7f2f2;
+  color: var(--specialist-primary-strong);
+}
+
+.specialistWorkspace {
+  min-width: 0;
+  overflow: auto;
+  padding: 28px;
+}
+
+.specialistTopbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  width: min(1080px, 100%);
+  margin: 0 auto 24px;
+}
+
+.specialistTopbar h1 {
+  margin: 4px 0 8px;
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+.specialistEyebrow {
+  margin: 0;
+  color: #48707a;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.specialistStatus {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border: 1px solid #bfddd3;
+  border-radius: 999px;
+  color: var(--specialist-success);
+  font-size: 12px;
+  font-weight: 800;
+  background: #eef8f3;
+}
+
+.specialistContent {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+}
+
+.specialistHero,
+.specialistSection,
+.evaluationIntro,
+.evaluationFormPlaceholder,
+.preparationCard,
+.specialistNoticeCard {
+  box-sizing: border-box;
+  border: 1px solid var(--specialist-line);
+  border-radius: 8px;
+  background: var(--specialist-panel);
+  box-shadow: var(--specialist-shadow);
+}
+
+.specialistHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  padding: 28px;
+}
+
+.specialistHero h2,
+.evaluationIntro h2,
+.preparationCard h2 {
+  margin: 6px 0 10px;
+  font-size: 26px;
+  line-height: 1.18;
+}
+
+.primaryAction {
+  background: var(--specialist-primary);
+  color: #ffffff;
+}
+
+.primaryAction:hover:not(:disabled) {
+  background: var(--specialist-primary-strong);
+}
+
+.secondaryAction {
+  border: 1px solid #b8c7cb;
+  background: #ffffff;
+  color: #33464e;
+}
+
+.secondaryAction:hover:not(:disabled) {
+  background: #edf3f4;
+}
+
+.specialistSection {
+  margin-top: 18px;
+  padding: 22px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.sectionHeader h2 {
+  margin-top: 4px;
+  font-size: 20px;
+}
+
+.specialistNoticeCard {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+  background: var(--specialist-panel-soft);
+  box-shadow: none;
+}
+
+.noticeIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+}
+
+.noticeIcon::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.specialistNoticeCard h2 {
+  margin-bottom: 6px;
+  font-size: 17px;
+}
+
+.evaluationIntro,
+.evaluationFormPlaceholder {
+  padding: 24px;
+}
+
+.evaluationFormPlaceholder {
+  margin-top: 16px;
+  background: var(--specialist-panel-soft);
+  box-shadow: none;
+}
+
+.evaluationFormPlaceholder h3 {
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.specialistActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.evaluationProgress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.evaluationProgress li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid var(--specialist-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.evaluationProgress span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf3f4;
+  color: #40545c;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.evaluationProgress strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #40545c;
+  font-size: 14px;
+}
+
+.evaluationProgress li[data-state="active"] {
+  border-color: #9bc9cf;
+  background: #f1fbfb;
+}
+
+.evaluationProgress li[data-state="active"] span {
+  background: var(--specialist-primary);
+  color: #ffffff;
+}
+
+.preparationCard {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 22px;
+  padding: 26px;
+}
+
+.preparationIcon {
+  width: 86px;
+  height: 86px;
+  border-radius: 8px;
+}
+
+.preparationIcon::before {
+  content: "";
+  width: 44px;
+  height: 30px;
+  border: 4px solid currentColor;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.preparationChecklist {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.preparationChecklist li {
+  position: relative;
+  padding-left: 28px;
+  color: #33464e;
+  line-height: 1.4;
+}
+
+.preparationChecklist li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #dff2e9;
+}
+
+.preparationChecklist li::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 6px;
+  width: 6px;
+  height: 3px;
+  border-bottom: 2px solid var(--specialist-success);
+  border-left: 2px solid var(--specialist-success);
+  transform: rotate(-45deg);
+}
+
+/* Second specialist UI iteration */
+#specialistApp {
+  grid-template-columns: 264px minmax(0, 1fr);
+}
+
+#specialistApp button {
+  border-radius: 9px;
+  transition: background-color 180ms ease, border-color 180ms ease,
+    box-shadow 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.specialistIcon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.specialistSidebar {
+  gap: var(--specialist-space-8);
+  padding: 24px 18px;
+  background: #fbfdfd;
+}
+
+.specialistBrand {
+  display: block;
+  padding: 0 4px 22px;
+  border-bottom: 1px solid var(--specialist-line);
+}
+
+.specialistBrandFullLockup {
+  display: block;
+}
+
+.specialistBrandFull {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+#specialistApp .specialistBrandTagline {
+  max-width: 214px;
+  margin: -4px auto 0;
+  color: #385a68;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.specialistBrandCompact {
+  display: none;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: var(--specialist-space-3);
+  align-items: center;
+}
+
+.specialistBrandMark {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f1f9fb;
+  box-shadow: 0 7px 18px rgba(20, 119, 137, 0.2);
+}
+
+.specialistBrandMark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.specialistBrand strong {
+  font-size: 15px;
+}
+
+.specialistNav {
+  gap: var(--specialist-space-2);
+}
+
+.specialistNav button {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: var(--specialist-space-3);
+  align-items: center;
+  min-height: 48px;
+  padding: 0 12px;
+  color: #48606a;
+}
+
+.specialistNav button::before {
+  content: "";
+  position: absolute;
+  left: -18px;
+  width: 3px;
+  height: 24px;
+  border-radius: 0 3px 3px 0;
+  background: transparent;
+}
+
+.specialistNav button:hover:not(:disabled) {
+  background: #f0f7f7;
+}
+
+.specialistNav button[aria-current="page"] {
+  background: var(--specialist-primary-soft);
+  color: var(--specialist-primary-strong);
+  font-weight: 800;
+}
+
+.specialistNav button[aria-current="page"]::before {
+  background: var(--specialist-primary);
+}
+
+.specialistNav button:disabled {
+  opacity: 1;
+  color: #829198;
+}
+
+.navLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navBadge {
+  padding: 3px 6px;
+  border: 1px solid #d6e0e2;
+  border-radius: 5px;
+  background: #f4f7f7;
+  color: #718187;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.specialistWorkspace {
+  padding: 36px 40px 48px;
+}
+
+.specialistTopbar,
+.specialistContent {
+  width: min(1240px, 100%);
+}
+
+.specialistTopbar {
+  display: block;
+  margin-bottom: var(--specialist-space-8);
+}
+
+.specialistTopbar h1 {
+  margin: 6px 0 8px;
+  font-size: 34px;
+}
+
+.specialistTopbar > p:last-child {
+  max-width: 680px;
+  font-size: 16px;
+}
+
+.specialistEyebrow {
+  color: var(--specialist-primary-strong);
+  letter-spacing: 0.04em;
+}
+
+.specialistHero,
+.specialistSection,
+.evaluationIntro,
+.evaluationFormPlaceholder,
+.preparationCard,
+.specialistNoticeCard {
+  border-radius: var(--specialist-radius);
+}
+
+.specialistHero {
+  position: relative;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+  min-height: 320px;
+  overflow: hidden;
+  padding: 0;
+  border-color: #cfe2e5;
+  background: linear-gradient(120deg, #fff 0%, #fff 56%, #edf7f7 100%);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+  padding: 42px 0 42px 46px;
+}
+
+.heroIcon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  margin-bottom: var(--specialist-space-4);
+  place-items: center;
+  border-radius: 12px;
+  background: var(--specialist-primary-soft);
+  color: var(--specialist-primary-strong);
+}
+
+.specialistHero h2 {
+  margin: 7px 0 12px;
+  max-width: 520px;
+  font-size: 30px;
+}
+
+.specialistHero .heroContent > p:not(.specialistEyebrow) {
+  max-width: 590px;
+  font-size: 16px;
+}
+
+.specialistHero .primaryAction {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 48px;
+  margin-top: 24px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+
+.specialistHero .primaryAction .specialistIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.primaryAction:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(13, 94, 109, 0.2);
+  transform: translateY(-1px);
+}
+
+.primaryAction:active:not(:disabled) {
+  box-shadow: none;
+  transform: translateY(0);
+}
+
+.cognitiveVisual {
+  position: relative;
+  display: grid;
+  align-self: stretch;
+  min-width: 0;
+  place-items: center;
+  overflow: hidden;
+  background: #092d36;
+}
+
+.cognitiveVisual img {
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  object-fit: cover;
+  object-position: 54% center;
+}
+
+.visualCaption {
+  position: absolute;
+  left: 18px;
+  bottom: 16px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(5, 35, 43, 0.72);
+  color: #effcfc;
+  font-size: 11px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+
+.visualCaption .specialistIcon {
+  width: 17px;
+  height: 17px;
+  color: #68d3cd;
+}
+
+.processSection {
+  margin-top: var(--specialist-space-8);
+}
+
+.sectionHeading {
+  display: flex;
+  gap: var(--specialist-space-6);
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: var(--specialist-space-4);
+}
+
+.sectionHeading h2,
+.sectionHeader h2 {
+  margin-top: 5px;
+  font-size: 22px;
+}
+
+.sectionHeading > p {
+  max-width: 420px;
+  text-align: right;
+  font-size: 14px;
+}
+
+.processSteps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--specialist-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.processStep {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: var(--specialist-space-3);
+  align-items: center;
+  min-height: 94px;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--specialist-line);
+  border-radius: 12px;
+  background: var(--specialist-panel);
+}
+
+.processStep:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  right: -13px;
+  width: 13px;
+  border-top: 1px solid #b9cdd1;
+}
+
+.processStepIcon {
+  position: relative;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--specialist-primary-soft);
+  color: var(--specialist-primary-strong);
+}
+
+.processNumber {
+  position: absolute;
+  top: -7px;
+  right: -6px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--specialist-primary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.processStep h3 {
+  margin-bottom: 4px !important;
+  font-size: 16px;
+}
+
+.processStep p {
+  font-size: 12px;
+  line-height: 1.35 !important;
+}
+
+.specialistSection {
+  margin-top: var(--specialist-space-8);
+  padding: 22px 24px;
+}
+
+.specialistNoticeCard {
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  padding: 15px 16px;
+}
+
+.noticeIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+}
+
+.noticeIcon::before,
+.preparationIcon::before {
+  content: none;
+}
+
+.noticeIcon .specialistIcon {
+  width: 21px;
+  height: 21px;
+}
+
+.specialistNoticeCard h3 {
+  margin-bottom: 3px !important;
+  font-size: 16px;
+}
+
+.specialistNoticeCard p {
+  font-size: 14px;
+}
+
+.preparationIcon .specialistIcon {
+  width: 40px;
+  height: 40px;
+}
+
+@media (max-width: 1100px) {
+  .specialistWorkspace {
+    padding: 32px 28px 44px;
+  }
+
+  .specialistHero {
+    grid-template-columns: minmax(0, 1.25fr) minmax(220px, 0.75fr);
+  }
+
+  .heroContent {
+    padding: 36px 0 36px 36px;
+  }
+
+  .processSteps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .processStep:nth-child(2)::after {
+    content: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .specialistBrand {
+    padding-bottom: 14px;
+  }
+
+  .specialistBrandFullLockup {
+    display: none;
+  }
+
+  .specialistBrandCompact {
+    display: grid;
+  }
+
+  .specialistNav button::before {
+    left: 50%;
+    bottom: -4px;
+    width: 24px;
+    height: 3px;
+    transform: translateX(-50%);
+    border-radius: 3px 3px 0 0;
+  }
+
+  .specialistNav button {
+    grid-template-columns: 20px auto auto;
+  }
+
+  .specialistHero {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+
+  .cognitiveVisual svg {
+    max-height: 230px;
+  }
+}
+
+@media (max-width: 680px) {
+  .navBadge {
+    display: none;
+  }
+
+  .specialistWorkspace {
+    padding: 24px 16px 36px;
+  }
+
+  .specialistHero {
+    grid-template-columns: 1fr;
+  }
+
+  .heroContent {
+    padding: 26px 22px;
+  }
+
+  .cognitiveVisual {
+    height: 210px;
+  }
+
+  .cognitiveVisual img {
+    min-height: 210px;
+    object-position: center 44%;
+  }
+
+  .sectionHeading {
+    display: block;
+  }
+
+  .sectionHeading > p {
+    margin-top: 8px !important;
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .specialistBrandMark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .specialistNav button {
+    grid-template-columns: 20px auto;
+    min-height: 44px;
+  }
+
+  .specialistTopbar h1 {
+    font-size: 30px;
+  }
+
+  .specialistHero h2 {
+    font-size: 25px;
+  }
+
+  .processSteps {
+    grid-template-columns: 1fr;
+  }
+
+  .processStep::after {
+    content: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #specialistApp *,
+  #specialistApp *::before,
+  #specialistApp *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 #scenarioSelector {
@@ -104,6 +1072,82 @@ body {
   }
 }
 
+@media (max-width: 860px) {
+  #specialistApp {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .specialistSidebar {
+    gap: 14px;
+    border-right: 0;
+    border-bottom: 1px solid var(--specialist-line);
+    padding: 14px;
+  }
+
+  .specialistNav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .specialistNav button {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .specialistWorkspace {
+    padding: 18px;
+  }
+
+  .specialistTopbar,
+  .specialistHero,
+  .preparationCard {
+    grid-template-columns: 1fr;
+  }
+
+  .specialistTopbar {
+    flex-direction: column;
+  }
+
+  .specialistHero .primaryAction,
+  .specialistActions button {
+    width: 100%;
+  }
+
+  .specialistActions {
+    flex-direction: column-reverse;
+  }
+
+  .evaluationProgress {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .specialistTopbar h1 {
+    font-size: 27px;
+  }
+
+  .specialistHero,
+  .evaluationIntro,
+  .evaluationFormPlaceholder,
+  .preparationCard,
+  .specialistSection {
+    padding: 18px;
+  }
+
+  .evaluationProgress {
+    grid-template-columns: 1fr;
+  }
+
+  .specialistHero {
+    padding: 0;
+  }
+}
+
 #visualDiscriminationReticle {
   position: fixed;
   left: 50%;
@@ -113,6 +1157,91 @@ body {
   height: 24px;
   pointer-events: none;
   transform: translate(-50%, -50%);
+}
+
+.sessionBrowser { gap: 18px; }
+.sessionFilters {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) repeat(3, minmax(135px, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--specialist-line);
+  border-radius: 8px;
+  background: #fff;
+}
+.sessionFilters label { display: grid; gap: 7px; color: #33464e; font-size: 12px; font-weight: 700; }
+.sessionFilters input, .sessionFilters select {
+  width: 100%; min-width: 0; min-height: 42px; box-sizing: border-box;
+  border: 1px solid #b9c6ca; border-radius: 6px; background: #fff; color: #17242a; padding: 0 10px;
+}
+.sessionFilters .primaryAction { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; }
+.sessionViewStatus { padding: 18px; border-left: 4px solid #527078; background: #fff; color: #33464e; }
+.sessionViewStatus[data-tone="danger"] { border-color: #a23939; color: #8d3030; }
+.sessionTableWrap { width: 100%; overflow-x: auto; border: 1px solid var(--specialist-line); border-radius: 8px; background: #fff; }
+.sessionTable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.sessionTable th, .sessionTable td { padding: 13px 14px; border-bottom: 1px solid #e1e7e9; text-align: left; white-space: nowrap; }
+.sessionTable th { background: #f3f6f6; color: #52616a; font-size: 11px; text-transform: uppercase; }
+.sessionTable tbody tr:last-child td { border-bottom: 0; }
+.sessionTable tbody tr:hover { background: #f8faf9; }
+.tableAction, .sessionPagination button, .exportActions button, .backToSessions {
+  min-height: 36px; border: 1px solid #9eb0b5; border-radius: 6px; background: #fff; color: #245f49; font-weight: 700; padding: 0 12px; cursor: pointer;
+}
+.statusPill { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #eef2f3; color: #52616a; font-weight: 700; }
+.statusPill[data-status="finished"] { background: #e5f3ec; color: #24714f; }
+.statusPill[data-status="active"] { background: #fff2d8; color: #865310; }
+.sessionPagination { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 14px; color: #52616a; font-size: 13px; }
+.sessionPagination button:disabled { opacity: .45; }
+.resultsDashboard { display: grid; gap: 18px; }
+.resultsHeader { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.resultsHeader h2 { margin-top: 7px; font-size: 25px; }
+.backToSessions { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 18px; }
+.backToSessions .specialistIcon, .exportActions .specialistIcon { width: 16px; height: 16px; }
+.exportActions { display: flex; gap: 8px; }
+.exportActions button { display: inline-flex; align-items: center; gap: 6px; }
+.metricGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.metricCard { min-width: 0; padding: 16px; border: 1px solid var(--specialist-line); border-radius: 8px; background: #fff; }
+.metricCard span, .metricCard small { display: block; color: #60737a; font-size: 12px; }
+.metricCard strong { display: block; margin: 8px 0 3px; color: #17242a; font-size: 26px; }
+.resultsBand { padding: 18px; border: 1px solid var(--specialist-line); border-radius: 8px; background: #fff; }
+.resultsBand .sectionHeader { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 16px; }
+.resultsBand h3 { margin: 3px 0 0; font-size: 19px; }
+.activityResults { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.activityResultCard { min-width: 0; border: 1px solid #d7e0e2; border-radius: 7px; overflow: hidden; }
+.activityResultCard > div { padding: 14px; background: #f3f6f6; }
+.activityResultCard span { color: #527078; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.activityResultCard h4 { margin: 4px 0 0; font-size: 16px; }
+.activityResultCard dl { margin: 0; padding: 8px 14px; }
+.activityResultCard dl div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid #edf1f2; }
+.activityResultCard dl div:last-child { border-bottom: 0; }
+.activityResultCard dt { color: #60737a; font-size: 12px; overflow-wrap: anywhere; }
+.activityResultCard dd { margin: 0; font-size: 13px; font-weight: 800; }
+.chartLegend { display: flex; flex-wrap: wrap; gap: 12px; color: #52616a; font-size: 12px; }
+.chartLegend span::before { content: ""; display: inline-block; width: 14px; height: 3px; margin-right: 5px; vertical-align: middle; background: #2f7d5c; }
+.chartLegend [data-series="trunk"]::before { background: #277aa1; }
+.chartLegend [data-series="motor"]::before { background: #b06d26; }
+.chartLegend [data-series="event"]::before { width: 3px; height: 12px; background: #b63f3f; }
+.timelineCanvas { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 18px; }
+.timelineCanvas svg { display: block; width: 100%; min-height: 260px; overflow: visible; }
+.timelineCanvas path { fill: none; stroke-width: 2.4; vector-effect: non-scaling-stroke; }
+.timelineCanvas text { fill: #60737a; font-size: 11px; }
+.chartGrid line { stroke: #b9c6ca; stroke-width: 1; }
+.seriesHead { stroke: #2f7d5c; }.seriesTrunk { stroke: #277aa1; }.seriesMotor { stroke: #b06d26; }
+.timelineCanvas .eventMarker { stroke: #b63f3f; stroke-width: 1.5; stroke-dasharray: 5 4; }
+.eventList { display: grid; align-content: start; gap: 7px; max-height: 270px; overflow-y: auto; color: #52616a; font-size: 12px; }
+.eventList strong { color: #17242a; }.eventList span { padding-bottom: 6px; border-bottom: 1px solid #e1e7e9; }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+@media (max-width: 1050px) {
+  .sessionFilters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metricGrid, .activityResults { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .sessionFilters, .metricGrid, .activityResults { grid-template-columns: 1fr; }
+  .resultsHeader, .resultsBand .sectionHeader, .sessionPagination { align-items: stretch; flex-direction: column; }
+  .exportActions button { flex: 1; justify-content: center; }
+  .timelineCanvas { grid-template-columns: 1fr; }
+  .eventList { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; }
 }
 
 #visualDiscriminationReticle::before,
@@ -608,4 +1737,96 @@ body {
   #evaluationSetup progress {
     width: 100%;
   }
+}
+
+/* Evaluation preparation and activity selection: shared specialist palette. */
+#evaluationSetup, #scenarioSelector {
+  background: radial-gradient(ellipse at top right, var(--specialist-primary-soft), transparent 60%), var(--specialist-bg);
+  color: var(--specialist-ink);
+  padding: clamp(16px, 3vw, 48px);
+  overflow-y: auto;
+}
+#evaluationSetup .setupShell, #scenarioSelector .scenarioShell {
+  width: min(1120px, 100%); margin: 0 auto; box-sizing: border-box;
+}
+#evaluationSetup .setupShell {
+  padding: clamp(20px, 3vw, 36px); border-color: var(--specialist-line);
+  border-radius: 22px; box-shadow: var(--specialist-shadow);
+}
+#evaluationSetup .setupHeader { align-items: flex-start; border: 0; padding-bottom: 0; }
+#evaluationSetup h1 { font-size: clamp(26px, 3vw, 36px); letter-spacing: -1px; }
+#evaluationSetup .setupEyebrow, #scenarioSelector .scenarioEyebrow {
+  color: var(--specialist-primary); font-size: 11px; font-weight: 700; letter-spacing: 1.6px; margin: 0 0 12px;
+}
+#evaluationSetup .setupIntro, #scenarioSelector .scenarioIntro {
+  color: var(--specialist-muted); font-size: 15px; line-height: 1.65; max-width: 660px; margin: 12px 0 0;
+}
+#evaluationSetup .backendBadge, #evaluationSetup .cameraPanelHeading strong {
+  padding: 8px 10px; border-radius: 8px; background: var(--specialist-panel-soft); border: 1px solid var(--specialist-line);
+}
+#evaluationSetup .setupSteps {
+  list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  padding: 18px 0; margin: 22px 0 0; border-block: 1px solid var(--specialist-line);
+}
+#evaluationSetup .setupSteps li { display: flex; align-items: center; gap: 10px; color: var(--specialist-muted); font-size: 13px; }
+#evaluationSetup .setupSteps span { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--specialist-panel-soft); border: 1px solid var(--specialist-line); }
+#evaluationSetup .setupSteps [aria-current] { color: var(--specialist-primary); font-weight: 700; }
+#evaluationSetup .setupSteps [aria-current] span { background: var(--specialist-primary); color: white; border-color: transparent; }
+#evaluationSetup .setupSteps [data-complete="true"] span { background: var(--specialist-primary-soft); color: var(--specialist-primary-strong); }
+#evaluationSetup .setupParticipant { padding: 20px; border-radius: 12px; background: var(--specialist-panel-soft); }
+#evaluationSetup .setupHint { font-size: 12px; color: var(--specialist-muted); margin: 10px 0 0; line-height: 1.5; }
+#evaluationSetup input, #evaluationSetup select { min-height: 46px; border-color: var(--specialist-line); border-radius: 9px; }
+#evaluationSetup button, #scenarioSelector .scenarioCard button { background: var(--specialist-primary); border-radius: 9px; min-height: 46px; transition: background .18s, box-shadow .18s; }
+#evaluationSetup button:hover:not(:disabled), #scenarioSelector .scenarioCard button:hover { background: var(--specialist-primary-strong); }
+#evaluationSetup .secondaryButton { background: white; color: var(--specialist-primary-strong); border: 1px solid var(--specialist-line); }
+#evaluationSetup .secondaryButton:hover:not(:disabled) { background: var(--specialist-primary-soft); }
+#evaluationSetup .setupToolbar { margin: 22px 0; }
+#evaluationSetup .cameraSetupGrid { gap: 20px; }
+#evaluationSetup .cameraSetupPanel { background: white; border-color: var(--specialist-line); border-radius: 14px; padding: 20px; }
+#evaluationSetup .cameraPanelHeading { align-items: flex-start; }
+#evaluationSetup .cameraPanelHeading span { color: var(--specialist-primary); letter-spacing: 1px; }
+#evaluationSetup .cameraPreview { border-radius: 10px; border: 0; background: var(--specialist-ink); }
+#evaluationSetup .cameraPreview > span { padding: 24px; text-align: center; line-height: 1.6; }
+#evaluationSetup .cameraGuidance { font-size: 13px; line-height: 1.6; color: var(--specialist-muted); margin: 14px 0 0; }
+#evaluationSetup .cameraGuidance strong { display: block; color: var(--specialist-ink); margin-bottom: 3px; }
+#evaluationSetup #visionDetectionStatus { font-size: 12px; line-height: 1.8; color: var(--specialist-muted); }
+#evaluationSetup #visionDetectionStatus:empty { display: none; }
+#evaluationSetup .calibrationStrip { border-color: var(--specialist-primary); background: var(--specialist-primary-soft); border-radius: 8px; padding: 18px; }
+#evaluationSetup progress { accent-color: var(--specialist-primary); }
+#evaluationSetup .setupFooter { line-height: 1.65; }
+#scenarioSelector { display: block; }
+#scenarioSelector .scenarioShell { padding-top: clamp(16px, 5vh, 64px); }
+#scenarioSelector h1 { text-align: left; font-size: clamp(30px, 4vw, 44px); letter-spacing: -1.5px; line-height: 1.15; }
+#scenarioSelector .scenarioGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 36px; }
+#scenarioSelector .scenarioCard { display: flex; flex-direction: column; padding: 24px; background: white; border: 1px solid var(--specialist-line); border-radius: 18px; box-shadow: var(--specialist-shadow); min-width: 0; }
+#scenarioSelector .scenarioArtwork { position: relative; margin: -24px -24px 24px; border-radius: 17px 17px 0 0; color: var(--specialist-primary); background: var(--specialist-primary-soft); overflow: hidden; }
+#scenarioSelector .scenarioArtwork svg { display: block; width: 100%; height: 185px; padding: 15px; box-sizing: border-box; }
+#scenarioSelector .scenarioArtwork span { position: absolute; top: 16px; left: 18px; font-size: 11px; letter-spacing: 2px; font-weight: 700; }
+#scenarioSelector .scenarioCard:nth-child(2) .scenarioArtwork { background: #e9eff3; color: #526e80; }
+#scenarioSelector .scenarioCard:nth-child(3) .scenarioArtwork { background: #f3f0e8; color: #82734b; }
+#scenarioSelector .scenarioCard .scenarioActivity { color: var(--specialist-primary-strong); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; min-height: 0; margin: 0 0 10px; }
+#scenarioSelector .scenarioCard h2 { font-size: 23px; line-height: 1.25; margin-bottom: 12px; }
+#scenarioSelector .scenarioCard .scenarioPurpose { font-size: 14px; line-height: 1.7; color: var(--specialist-muted); margin-bottom: 24px; }
+#scenarioSelector .scenarioCard button { margin-top: auto; }
+#scenarioSelector .scenarioCard:focus-within { border-color: var(--specialist-primary); }
+#scenarioSelector .scenarioFooter { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 24px 0; margin-top: 24px; border-top: 1px solid var(--specialist-line); }
+#scenarioSelector .scenarioFooter p { margin: 0; color: var(--specialist-muted); font-size: 13px; line-height: 1.65; max-width: 500px; }
+#scenarioSelector .finishEvaluationButton { background: transparent; color: var(--specialist-secondary); border: 1px solid var(--specialist-line); margin: 0; width: auto; flex-shrink: 0; border-radius: 9px; }
+#scenarioSelector .finishEvaluationButton:hover:not(:disabled) { background: white; }
+@media (max-width: 800px) {
+  #scenarioSelector .scenarioGrid { grid-template-columns: 1fr; }
+  #scenarioSelector .scenarioArtwork svg { height: 150px; }
+  #evaluationSetup .cameraSetupGrid { grid-template-columns: 1fr; }
+  #evaluationSetup .setupHeader, #scenarioSelector .scenarioFooter { flex-direction: column; align-items: stretch; }
+}
+@media (max-width: 520px) {
+  #evaluationSetup .setupSteps { grid-template-columns: 1fr; }
+  #evaluationSetup .setupInlineControl { grid-template-columns: 1fr; }
+  #evaluationSetup .setupToolbar button { flex: 1 1 100%; }
+  #evaluationSetup .cameraPanelHeading { flex-wrap: wrap; }
+  #evaluationSetup .setupFooter, #evaluationSetup .calibrationStrip { flex-direction: column; align-items: stretch; }
+  #evaluationSetup progress { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #evaluationSetup button, #scenarioSelector .scenarioCard button { transition: none; }
 }

@@ -312,6 +312,7 @@ export class MuseumCharacterManager {
     }
   }
 
+
   private async resolveModelUrl(config: MuseumVisitorConfig): Promise<string | null> {
     const candidates = [
       config.modelUrl,

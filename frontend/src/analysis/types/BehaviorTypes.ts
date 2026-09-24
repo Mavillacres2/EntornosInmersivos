@@ -1,3 +1,4 @@
+import type { VisionMetrics } from "./AnalysisTypes";
 import type { FeatureQuality } from "./AnalysisTypes";
 
 export interface HeadBehaviorFeatures {
@@ -83,6 +84,8 @@ export interface ActivityContext {
 }
 
 export interface BehaviorSample {
+  vision?: VisionMetrics;
+  trunkSource?: "body-camera" | "upper-camera";
   sampleId: string;
   sessionId: string;
   elapsedMs: number;
@@ -121,6 +124,7 @@ export interface BehaviorSample {
 }
 
 export type BehaviorEventType =
+  | "BLINK"
   | "OFF_TASK_ORIENTATION_START"
   | "OFF_TASK_ORIENTATION_END"
   | "HEAD_TURN"
@@ -147,6 +151,9 @@ export interface BehaviorEvent {
   condition: string | null;
   trialNumber: number | null;
   details?: {
+    eye?: "left" | "right" | "both";
+    startTime?: number;
+    endTime?: number;
     distractorId?: string | null;
     distractorType?: string | null;
     durationMs?: number | null;

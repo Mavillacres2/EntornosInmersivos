@@ -1,3 +1,4 @@
+import type { HandDetection, HeadOrientation } from "../types/AnalysisTypes";
 import type { AnalysisDebugLandmarks } from "../tracking/BehaviorTrackingManager";
 import type {
   AnalysisPerformanceSnapshot
@@ -44,7 +45,7 @@ export class AnalysisDebugOverlay {
       <div class="analysisDebugCanvases">
         <figure>
           <canvas width="240" height="150" data-camera="upper"></canvas>
-          <figcaption>CAM1 cabeza / tronco</figcaption>
+          <figcaption>CAM1 rostro / tren superior</figcaption>
         </figure>
         <figure>
           <canvas width="240" height="150" data-camera="full"></canvas>
@@ -78,8 +79,8 @@ export class AnalysisDebugOverlay {
   private refresh(): void {
     const landmarks = this.getLandmarks();
 
-    drawPose(this.upperCanvas, landmarks.upperPose, landmarks.upperFace);
-    drawPose(this.fullCanvas, landmarks.fullBodyPose, null);
+    drawPose(this.upperCanvas, landmarks.upperPose, landmarks.upperFace, [], landmarks.headOrientation ?? null, true);
+    drawPose(this.fullCanvas, landmarks.fullBodyPose, null, landmarks.hands ?? []);
 
     if (!this.statusText) {
       return;
@@ -107,7 +108,10 @@ export class AnalysisDebugOverlay {
 function drawPose(
   canvas: HTMLCanvasElement | null,
   pose: AnalysisDebugLandmarks["upperPose"],
-  face: AnalysisDebugLandmarks["upperFace"]
+  face: AnalysisDebugLandmarks["upperFace"],
+  hands: HandDetection[] = [],
+  head: HeadOrientation | null = null,
+  upperBodyOnly = false
 ): void {
   const context = canvas?.getContext("2d");
 
@@ -118,7 +122,7 @@ function drawPose(
   context.fillStyle = "#07131d";
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  if (!hasVisibleLandmarks(pose, face)) {
+  if (!hasVisibleLandmarks(pose, face) && !hands.length) {
     context.fillStyle = "#91a5b5";
     context.font = "12px system-ui";
     context.textAlign = "center";
@@ -130,8 +134,9 @@ function drawPose(
     x: 0,
     y: 0,
     width: canvas.width,
-    height: canvas.height
-  });
+    height: canvas.height,
+    upperBodyOnly
+  }, 1, hands, head, true);
 }
 
 function formatFps(value: number | null): string {
