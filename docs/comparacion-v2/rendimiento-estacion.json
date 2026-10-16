@@ -1,0 +1,76 @@
+{
+  "scope": "Renderer only; no MediaPipe or physical cameras",
+  "renderer": {
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001681) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  },
+  "phases": [
+    {
+      "phase": "space/exploration",
+      "samples": 23,
+      "inconclusive": true,
+      "estimatedFps": 1.98,
+      "frameMedianMs": 316.8,
+      "frameP95Ms": 1002.8,
+      "renderSubmitMedianMs": 13.2,
+      "drawCallsMedian": 281,
+      "activeTrianglesMedian": 315338
+    },
+    {
+      "phase": "space/guide",
+      "samples": 157,
+      "inconclusive": false,
+      "estimatedFps": 2.63,
+      "frameMedianMs": 33.5,
+      "frameP95Ms": 1002.2,
+      "renderSubmitMedianMs": 9.1,
+      "drawCallsMedian": 326,
+      "activeTrianglesMedian": 329726
+    },
+    {
+      "phase": "space/instructions",
+      "samples": 20,
+      "inconclusive": true,
+      "estimatedFps": 1.64,
+      "frameMedianMs": 1001.2,
+      "frameP95Ms": 1003.3,
+      "renderSubmitMedianMs": 3.3,
+      "drawCallsMedian": 184,
+      "activeTrianglesMedian": 71558
+    },
+    {
+      "phase": "space/practice",
+      "samples": 18,
+      "inconclusive": true,
+      "estimatedFps": 1.46,
+      "frameMedianMs": 1001.5,
+      "frameP95Ms": 1002.7,
+      "renderSubmitMedianMs": 2.8,
+      "drawCallsMedian": 184,
+      "activeTrianglesMedian": 71558
+    },
+    {
+      "phase": "space/countdown",
+      "samples": 3,
+      "inconclusive": true,
+      "estimatedFps": 1,
+      "frameMedianMs": 1001.6,
+      "frameP95Ms": 1002.2,
+      "renderSubmitMedianMs": 2.3,
+      "drawCallsMedian": 62,
+      "activeTrianglesMedian": 15118
+    },
+    {
+      "phase": "space/running-block",
+      "samples": 9,
+      "inconclusive": true,
+      "estimatedFps": 1,
+      "frameMedianMs": 1001.3,
+      "frameP95Ms": 1002.8,
+      "renderSubmitMedianMs": 2,
+      "drawCallsMedian": 62,
+      "activeTrianglesMedian": 15118
+    }
+  ]
+}

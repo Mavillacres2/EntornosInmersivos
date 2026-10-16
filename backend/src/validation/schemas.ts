@@ -103,6 +103,7 @@ export const visionMetricsSchema = z.object({
 
 export const behaviorSampleSchema = z
   .object({
+    attemptId: z.uuid().optional(),
     vision: visionMetricsSchema.optional(),
     trunkSource: z.enum(["body-camera", "upper-camera"]).optional(),
     sampleId: z.uuid(),
@@ -152,6 +153,8 @@ export const behaviorSampleSchema = z
   .strict();
 
 export const behaviorEventTypeSchema = z.enum([
+  "ACTIVITY_STARTED",
+  "ACTIVITY_INTERRUPTED",
   "BLINK",
   "OFF_TASK_ORIENTATION_START",
   "OFF_TASK_ORIENTATION_END",
@@ -170,6 +173,8 @@ export const behaviorEventTypeSchema = z.enum([
 
 export const behaviorEventSchema = z
   .object({
+    attemptId: z.uuid().optional(),
+    activityState: nullableShortString.optional(),
     eventId: z.uuid(),
     sessionId: z.uuid(),
     elapsedMs: finiteNumber.nonnegative(),
@@ -182,6 +187,8 @@ export const behaviorEventSchema = z
     trialNumber: z.number().int().positive().nullable(),
     details: z
       .object({
+        reason: z.string().trim().max(120).optional(),
+        activityState: z.string().trim().max(120).optional(),
         eye: z.enum(["left", "right", "both"]).optional(),
         startTime: finiteNumber.nonnegative().optional(),
         endTime: finiteNumber.nonnegative().optional(),
@@ -237,6 +244,7 @@ export const createSessionSchema = z
 
 export const activityResultSchema = z
   .object({
+    attemptId: z.uuid().optional(),
     resultId: z.uuid(),
     scenarioId: z.string().trim().min(1).max(120),
     activityId: z.string().trim().min(1).max(120),

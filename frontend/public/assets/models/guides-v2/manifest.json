@@ -1,0 +1,113 @@
+{
+  "version": "original-guides-v2",
+  "models": [
+    {
+      "file": "classroom-low.glb",
+      "bytes": 249172,
+      "vertices": 4570,
+      "triangles": 8376,
+      "meshes": 44,
+      "clips": [
+        "Idle",
+        "Greeting",
+        "Pointing"
+      ]
+    },
+    {
+      "file": "classroom-balanced.glb",
+      "bytes": 372412,
+      "vertices": 7370,
+      "triangles": 13936,
+      "meshes": 44,
+      "clips": [
+        "Idle",
+        "Greeting",
+        "Pointing"
+      ]
+    },
+    {
+      "file": "classroom-high.glb",
+      "bytes": 489112,
+      "vertices": 10022,
+      "triangles": 19240,
+      "meshes": 44,
+      "clips": [
+        "Idle",
+        "Greeting",
+        "Pointing"
+      ]
+    },
+    {
+      "file": "space-low.glb",
+      "bytes": 254732,
+      "vertices": 4682,
+      "triangles": 8536,
+      "meshes": 45,
+      "clips": [
+        "Idle",
+        "Greeting",
+        "Pointing"
+      ]
+    },
+    {
+      "file": "space-balanced.glb",
+      "bytes": 381020,
+      "vertices": 7554,
+      "triangles": 14224,
+      "meshes": 45,
+      "clips": [
+        "Idle",
+        "Greeting",
+        "Pointing"
+      ]
+    },
+    {
+      "file": "space-high.glb",
+      "bytes": 497736,
+      "vertices": 10206,
+      "triangles": 19528,
+      "meshes": 45,
+      "clips": [
+        "Idle",
+        "Greeting",
+        "Pointing"
+      ]
+    },
+    {
+      "file": "museum-low.glb",
+      "bytes": 243532,
+      "vertices": 4442,
+      "triangles": 8144,
+      "meshes": 44,
+      "clips": [
+        "Idle",
+        "Greeting",
+        "Pointing"
+      ]
+    },
+    {
+      "file": "museum-balanced.glb",
+      "bytes": 363920,
+      "vertices": 7178,
+      "triangles": 13576,
+      "meshes": 44,
+      "clips": [
+        "Idle",
+        "Greeting",
+        "Pointing"
+      ]
+    },
+    {
+      "file": "museum-high.glb",
+      "bytes": 481700,
+      "vertices": 9854,
+      "triangles": 18928,
+      "meshes": 44,
+      "clips": [
+        "Idle",
+        "Greeting",
+        "Pointing"
+      ]
+    }
+  ]
+}

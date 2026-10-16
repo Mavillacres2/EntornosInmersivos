@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { AppConfig } from "../config/env.js";
 import type { MongoDatabase } from "../database/MongoDatabase.js";
 import { ApiError } from "../middleware/errors.js";
+import { SpecialistAuth } from '../middleware/SpecialistAuth.js';
 import type { AnalysisService } from "../services/AnalysisService.js";
 import {
   activityResultSchema,
@@ -39,6 +40,10 @@ export function createApiRouter(
   service: AnalysisService
 ): Router {
   const router = Router();
+  const auth=new SpecialistAuth(config);
+  router.post('/auth/login',asyncRoute((request,response)=>auth.login(request,response)));
+  router.post('/auth/lock',(request,response)=>auth.lock(request,response));
+  router.get('/auth/session',(request,response)=>{response.setHeader('Cache-Control','no-store');response.json({authorized:auth.authorized(request)});});
   const behaviorBatchSchema = createBehaviorBatchSchema(config.maxBatchSize);
   const eventBatchSchema = createEventBatchSchema(config.maxBatchSize);
 
@@ -67,6 +72,7 @@ export function createApiRouter(
 
   router.get(
     "/sessions",
+    auth.require,
     asyncRoute(async (request, response) => {
       const query = sessionListQuerySchema.parse(request.query);
       const result = await service.listSessions({
@@ -80,6 +86,7 @@ export function createApiRouter(
 
   router.get(
     "/sessions/:sessionId/timeline",
+    auth.require,
     asyncRoute(async (request, response) => {
       const sessionId = parseSessionId(request.params.sessionId);
       const { maxPoints } = timelineQuerySchema.parse(request.query);
@@ -125,14 +132,15 @@ export function createApiRouter(
     asyncRoute(async (request, response) => {
       const sessionId = parseSessionId(request.params.sessionId);
       const payload = finishSessionSchema.parse(request.body);
-      const summary = await service.finishSession(sessionId, payload);
-
-      response.json({ summary });
+      await service.finishSession(sessionId, payload);
+      // The child may finish uploading, but only an authenticated GET exposes indicators.
+      response.json({ sessionFinished: true });
     })
   );
 
   router.get(
     "/sessions/:sessionId",
+    auth.require,
     asyncRoute(async (request, response) => {
       const sessionId = parseSessionId(request.params.sessionId);
       const session = await service.getSession(sessionId);

@@ -1,0 +1,11 @@
+{
+  "version": "host-es-MX-v1",
+  "voice": "Microsoft Sabina Desktop",
+  "locale": "es-MX",
+  "rate": 0,
+  "sentencePauseMs": 160,
+  "host": [
+    { "id": "host-welcome", "state": "GREETING", "title": "¡Hola! Soy Luma", "text": "¡Hola! ¡Qué alegría verte por aquí! Hoy tenemos tres aventuras preparadas para ti. Vamos a visitar un aula, viajar al espacio y explorar un museo. Escucha con atención las instrucciones de cada juego y diviértete mucho. ¿Estás listo? ¡Vamos a comenzar!" },
+    { "id": "host-farewell", "state": "FAREWELL", "title": "¡Gracias por participar!", "text": "¡Qué alegría! ¡Ya terminamos nuestras tres aventuras! Muchas gracias por jugar conmigo. Me encantó acompañarte por el aula, el espacio y el museo. Ahora puedes descansar un poquito. ¡Hasta la próxima!" }
+  ]
+}

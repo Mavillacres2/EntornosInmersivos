@@ -1,3 +1,10 @@
+import { getExplorationSoundEnabled, saveExplorationSoundEnabled } from "../ui/ExplorationPreferences";
+import { VirtualGuideManager } from '../guides/VirtualGuideManager';
+import { ExplorationVisuals } from '../environment/ExplorationVisuals';
+import { getExplorationQuality, saveExplorationQuality } from '../ui/ExplorationQuality';
+import { createExplorationAccents } from "../environment/ExplorationAccents";
+import { ExplorationHud } from "../ui/ExplorationHud";
+import { configureSceneAntialiasing } from "./SceneVisuals";
 import {
   Color4,
   RenderTargetTexture,
@@ -30,6 +37,7 @@ const SPACE_AMBIENT_LAYERS: AmbientSoundLayer[] = [
 export class SpaceStationScene {
   private readonly engine: Engine;
   private readonly canvas: HTMLCanvasElement;
+  private readonly onReturnToMenu: () => void;
   private readonly telemetry: ActivityTelemetrySink | null;
 
   private scene: Scene | null = null;
@@ -38,15 +46,12 @@ export class SpaceStationScene {
   private cameraManager: CameraManager | null = null;
   private spaceCharacterManager: SpaceCharacterManager | null = null;
   private spaceAmbientManager: SpaceAmbientManager | null = null;
-  private explorationPanel: HTMLElement | null = null;
-  private startActivityButton: HTMLButtonElement | null = null;
-  private activatePointerLockButton: HTMLButtonElement | null = null;
-  private releasePointerLockButton: HTMLButtonElement | null = null;
-  private audioToggleButton: HTMLButtonElement | null = null;
-  private pointerLockStatus: HTMLParagraphElement | null = null;
+  private explorationHud: ExplorationHud | null = null;
+  private guide: VirtualGuideManager | null = null;
+  private explorationVisuals: ExplorationVisuals | null = null;
   private evaluationHiddenMeshes: Mesh[] = [];
   private unsubscribePointerLock: (() => void) | null = null;
-  private stationAudioEnabled = true;
+  private stationAudioEnabled = getExplorationSoundEnabled();
   private evaluationStarted = false;
   private readonly handleExplorationPointerDownBound = (): void => {
     this.startStationAudio();
@@ -58,10 +63,12 @@ export class SpaceStationScene {
   constructor(
     engine: Engine,
     canvas: HTMLCanvasElement,
+    onReturnToMenu: () => void = () => {},
     telemetry?: ActivityTelemetrySink
   ) {
     this.engine = engine;
     this.canvas = canvas;
+    this.onReturnToMenu = onReturnToMenu;
     this.telemetry = telemetry ?? null;
   }
 
@@ -72,12 +79,14 @@ export class SpaceStationScene {
 
     const stationBuilder = new SpaceStationBuilder(scene);
     const stationLayout = stationBuilder.build();
+    stationLayout.evaluationHiddenMeshes.push(...createExplorationAccents(scene, "space"));
     const shadowGenerator = this.configureShadows(
       stationLayout.shadowLight,
       stationLayout.shadowCasters
     );
 
     this.configureImageProcessing(scene);
+    this.explorationVisuals = new ExplorationVisuals(scene, 'space', getExplorationQuality());
     this.optimizeStaticStation(scene);
     this.spaceAmbientManager = new SpaceAmbientManager(
       scene,
@@ -85,12 +94,14 @@ export class SpaceStationScene {
     );
     this.spaceAmbientManager.start();
     this.audioManager = new AudioManager();
+    this.audioManager.setEnabled(this.stationAudioEnabled);
     void this.audioManager.initialize(scene);
     this.spaceCharacterManager = new SpaceCharacterManager(scene);
     void this.spaceCharacterManager.initialize().catch((error: unknown) => {
       console.warn("No se pudieron inicializar personajes espaciales.", error);
     });
     this.cameraManager = new CameraManager({
+      onPointerLockError: () => this.explorationHud?.showLookUnavailable(),
       scene,
       canvas: this.canvas,
       explorationPosition: stationLayout.explorationEyePosition,
@@ -105,8 +116,15 @@ export class SpaceStationScene {
     });
     this.evaluationHiddenMeshes = stationLayout.evaluationHiddenMeshes;
     this.cameraManager.enterExplorationMode();
+    configureSceneAntialiasing(scene);
     this.showExplorationPanel();
     this.scene = scene;
+    this.guide = new VirtualGuideManager(scene, {
+      theme: 'space', quality: getExplorationQuality(),
+      beforeOpen: () => { this.cameraManager?.disablePointerLock(); this.audioManager?.stopAmbientAudio(); },
+      onClose: () => {}, onMenu: this.onReturnToMenu,
+      onComplete: () => { this.startStationAudio(); void this.beginEvaluationFlow(); }
+    });
 
     this.startCPTActivity = () => {
       this.spaceCharacterManager?.lookAtActivityParticipant(
@@ -150,6 +168,8 @@ export class SpaceStationScene {
   }
 
   dispose(): void {
+    this.guide?.dispose(); this.guide = null;
+    this.explorationVisuals?.dispose(); this.explorationVisuals = null;
     this.removeExplorationPanel();
     this.activity?.dispose();
     this.spaceAmbientManager?.dispose();
@@ -173,10 +193,12 @@ export class SpaceStationScene {
     light: DirectionalLight,
     shadowCasters: Mesh[]
   ): ShadowGenerator {
-    const shadowGenerator = new ShadowGenerator(512, light);
+    const shadowGenerator = new ShadowGenerator(1024, light);
 
-    shadowGenerator.useExponentialShadowMap = true;
-    shadowGenerator.blurKernel = 8;
+    shadowGenerator.useBlurExponentialShadowMap = true;
+    shadowGenerator.useKernelBlur = true;
+    shadowGenerator.blurScale = 2;
+    shadowGenerator.blurKernel = 16;
     shadowGenerator.bias = 0.0005;
     shadowGenerator.normalBias = 0.02;
     shadowGenerator.setDarkness(0.28);
@@ -188,7 +210,7 @@ export class SpaceStationScene {
     const shadowMap = shadowGenerator.getShadowMap();
 
     if (shadowMap) {
-      shadowMap.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
+      shadowMap.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONEVERYTWOFRAMES;
     }
 
     return shadowGenerator;
@@ -221,100 +243,52 @@ export class SpaceStationScene {
 
   private showExplorationPanel(): void {
     this.removeExplorationPanel();
-
-    const panel = document.createElement("section");
-    panel.id = "explorationPanel";
-    panel.setAttribute("aria-live", "polite");
-
-    const title = document.createElement("h1");
-    title.textContent = "Explora la estacion";
-
-    const movement = document.createElement("p");
-    movement.textContent = "W/A/S/D para caminar. Activa vista juego para mirar con el mouse.";
-
-    const pointerLockStatus = document.createElement("p");
-    pointerLockStatus.className = "pointerLockStatus";
-
-    const pointerLockActions = document.createElement("div");
-    pointerLockActions.className = "explorationActions";
-
-    const activatePointerLockButton = document.createElement("button");
-    activatePointerLockButton.type = "button";
-    activatePointerLockButton.className = "secondaryButton";
-    activatePointerLockButton.textContent = "Activar vista juego";
-    activatePointerLockButton.addEventListener("click", () => {
-      this.startStationAudio();
-      this.cameraManager?.enablePointerLock();
+    this.explorationHud = new ExplorationHud({
+      theme: "space",
+      onExplore: () => {
+        this.startStationAudio();
+        this.cameraManager?.enablePointerLock();
+      },
+      onRelease: () => this.cameraManager?.disablePointerLock(),
+      onStart: () => {
+        this.guide?.open();
+      },
+      onSound: () => this.toggleStationAudio(),
+      onMenu: this.onReturnToMenu,
+      onQuality: quality => {
+        saveExplorationQuality(quality); this.guide?.setQuality(quality);
+        if (this.scene && !this.evaluationStarted) {
+          this.explorationVisuals?.dispose();
+          this.explorationVisuals = new ExplorationVisuals(this.scene, 'space', quality);
+        }
+      }
     });
-
-    const releasePointerLockButton = document.createElement("button");
-    releasePointerLockButton.type = "button";
-    releasePointerLockButton.className = "secondaryButton";
-    releasePointerLockButton.textContent = "Liberar mouse";
-    releasePointerLockButton.addEventListener("click", () => {
-      this.cameraManager?.disablePointerLock();
-    });
-
-    pointerLockActions.append(activatePointerLockButton, releasePointerLockButton);
-
-    const prompt = document.createElement("p");
-    prompt.textContent = "Cuando estes listo, comienza el CPT.";
-
-    const audioToggleButton = document.createElement("button");
-    audioToggleButton.type = "button";
-    audioToggleButton.className = "secondaryButton";
-    audioToggleButton.addEventListener("click", () => {
-      this.toggleStationAudio();
-    });
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = "Comenzar actividad";
-    button.addEventListener("click", () => {
-      this.startStationAudio();
-      void this.beginEvaluationFlow();
-    });
-
-    panel.append(
-      title,
-      movement,
-      pointerLockStatus,
-      pointerLockActions,
-      prompt,
-      audioToggleButton,
-      button
-    );
-    document.body.appendChild(panel);
-
-    this.explorationPanel = panel;
-    this.startActivityButton = button;
-    this.activatePointerLockButton = activatePointerLockButton;
-    this.releasePointerLockButton = releasePointerLockButton;
-    this.audioToggleButton = audioToggleButton;
-    this.pointerLockStatus = pointerLockStatus;
     this.unsubscribePointerLock = this.cameraManager?.onPointerLockChange((locked) => {
       this.updatePointerLockUi(locked);
     }) ?? null;
     this.canvas.addEventListener("pointerdown", this.handleExplorationPointerDownBound);
     document.addEventListener("keydown", this.handleExplorationKeyDownBound);
-    this.updatePointerLockUi(this.cameraManager?.isPointerLocked() ?? false);
     this.updateAudioToggleUi();
   }
 
   private async beginEvaluationFlow(): Promise<void> {
     const cameraManager = this.cameraManager;
+    const scene = this.scene;
 
-    if (this.evaluationStarted || !cameraManager) {
+    if (this.evaluationStarted || !cameraManager || !scene) {
       return;
     }
 
     this.evaluationStarted = true;
+    this.guide?.dispose(); this.guide = null;
+    this.explorationVisuals?.dispose(); this.explorationVisuals = null;
     this.setExplorationPanelBusy();
     cameraManager.disablePointerLock();
     this.spaceAmbientManager?.setMode("evaluation");
     this.spaceAmbientManager?.setCondition("baseline");
     this.hideEvaluationObstructions();
     await cameraManager.enterEvaluationMode();
+    if (this.scene !== scene || scene.isDisposed) return;
     this.removeExplorationPanel();
     this.startCPTActivity();
   }
@@ -327,24 +301,7 @@ export class SpaceStationScene {
   }
 
   private setExplorationPanelBusy(): void {
-    if (!this.startActivityButton) {
-      return;
-    }
-
-    this.startActivityButton.disabled = true;
-    this.startActivityButton.textContent = "Preparando CPT...";
-
-    if (this.activatePointerLockButton) {
-      this.activatePointerLockButton.disabled = true;
-    }
-
-    if (this.releasePointerLockButton) {
-      this.releasePointerLockButton.disabled = true;
-    }
-
-    if (this.audioToggleButton) {
-      this.audioToggleButton.disabled = true;
-    }
+    this.explorationHud?.setBusy();
   }
 
   private removeExplorationPanel(): void {
@@ -355,13 +312,8 @@ export class SpaceStationScene {
       this.handleExplorationPointerDownBound
     );
     document.removeEventListener("keydown", this.handleExplorationKeyDownBound);
-    this.explorationPanel?.remove();
-    this.explorationPanel = null;
-    this.startActivityButton = null;
-    this.activatePointerLockButton = null;
-    this.releasePointerLockButton = null;
-    this.audioToggleButton = null;
-    this.pointerLockStatus = null;
+    this.explorationHud?.dispose();
+    this.explorationHud = null;
   }
 
   private handleExplorationKeyDown(event: KeyboardEvent): void {
@@ -380,26 +332,11 @@ export class SpaceStationScene {
   }
 
   private updatePointerLockUi(locked: boolean): void {
-    if (this.pointerLockStatus) {
-      this.pointerLockStatus.textContent = locked
-        ? "Vista juego activa. Mueve el mouse para observar. Esc o Q libera el mouse."
-        : "Mouse libre. Haz clic en la estacion o usa el boton para activar vista juego.";
-    }
-
-    if (this.activatePointerLockButton) {
-      this.activatePointerLockButton.disabled = locked || this.evaluationStarted;
-      this.activatePointerLockButton.textContent = locked
-        ? "Vista juego activa"
-        : "Activar vista juego";
-    }
-
-    if (this.releasePointerLockButton) {
-      this.releasePointerLockButton.disabled = !locked || this.evaluationStarted;
-      this.releasePointerLockButton.textContent = locked ? "Liberar mouse (Q)" : "Mouse libre";
-    }
+    this.explorationHud?.setPointerLocked(locked);
   }
 
   private startStationAudio(): void {
+    if (this.guide?.isOpen) return;
     if (!this.stationAudioEnabled) {
       return;
     }
@@ -411,6 +348,7 @@ export class SpaceStationScene {
 
   private toggleStationAudio(): void {
     this.stationAudioEnabled = !this.stationAudioEnabled;
+    saveExplorationSoundEnabled(this.stationAudioEnabled);
     this.audioManager?.setEnabled(this.stationAudioEnabled);
 
     if (this.stationAudioEnabled) {
@@ -421,12 +359,6 @@ export class SpaceStationScene {
   }
 
   private updateAudioToggleUi(): void {
-    if (!this.audioToggleButton) {
-      return;
-    }
-
-    this.audioToggleButton.textContent = this.stationAudioEnabled
-      ? "Audio: ON"
-      : "Audio: OFF";
+    this.explorationHud?.setSoundEnabled(this.stationAudioEnabled);
   }
 }

@@ -6,6 +6,7 @@ import {
 } from "./SpecialistComponents";
 import type { SpecialistAction, SpecialistSection } from "./SpecialistComponents";
 import { SpecialistResultsView } from "./SpecialistResultsView";
+import { SpecialistAccess } from './SpecialistAccess';
 
 export interface SpecialistAppHandlers {
   startCameraSetup(): void;
@@ -29,6 +30,7 @@ export class SpecialistApp {
   private root: HTMLElement | null = null;
   private activeSection: SpecialistSection = "home";
   private startingCameraSetup = false;
+  private resultSessionId: string | undefined;
   private readonly handlers: SpecialistAppHandlers;
 
   constructor(handlers: SpecialistAppHandlers) {
@@ -38,6 +40,8 @@ export class SpecialistApp {
   show(): void {
     this.render();
   }
+
+  showResults(sessionId:string):void{this.startingCameraSetup=false;this.resultSessionId=sessionId;this.activeSection='results';this.render();}
 
   remove(): void {
     this.root?.remove();
@@ -77,8 +81,8 @@ export class SpecialistApp {
       case "home": return this.createDashboard();
       case "new-evaluation": return this.createNewEvaluation();
       case "preparation": return this.createPreparation();
-      case "evaluations": return new SpecialistResultsView({ mode: "evaluations" }).create();
-      case "results": return new SpecialistResultsView({ mode: "results" }).create();
+      case "evaluations": return SpecialistAccess.gate(()=>new SpecialistResultsView({ mode: "evaluations" }).create());
+      case "results": return SpecialistAccess.gate(()=>new SpecialistResultsView({ mode: "results",openSessionId:this.resultSessionId }).create());
     }
   }
 

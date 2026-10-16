@@ -135,7 +135,7 @@ export class AnalysisRepository {
     sessionId: string,
     payload: ActivityResultDto
   ): Promise<void> {
-    const { activityResults } = await this.getCollections();
+    const { activityResults, sessions } = await this.getCollections();
 
     await activityResults.updateOne(
       {
@@ -154,6 +154,7 @@ export class AnalysisRepository {
       },
       { upsert: true }
     );
+    await sessions.updateOne({ sessionId }, { $addToSet: {scenariosCompleted:payload.scenarioId}, $set:{updatedAt:new Date()} });
   }
 
   async finishSession(
@@ -260,6 +261,8 @@ export class AnalysisRepository {
       { $project: {
         _id: 0,
         elapsedMs: 1,
+        attemptId: 1,
+        activityState: 1,
         capturedAt: 1,
         scenarioId: 1,
         activityId: 1,

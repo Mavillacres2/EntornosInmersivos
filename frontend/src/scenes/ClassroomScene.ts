@@ -1,3 +1,10 @@
+import { getExplorationSoundEnabled, saveExplorationSoundEnabled } from "../ui/ExplorationPreferences";
+import { VirtualGuideManager } from '../guides/VirtualGuideManager';
+import { ExplorationVisuals } from '../environment/ExplorationVisuals';
+import { getExplorationQuality, saveExplorationQuality } from '../ui/ExplorationQuality';
+import { createExplorationAccents } from "../environment/ExplorationAccents";
+import { ExplorationHud } from "../ui/ExplorationHud";
+import { configureSceneAntialiasing } from "./SceneVisuals";
 import {
   Color3,
   Color4,
@@ -25,6 +32,7 @@ import { MetricsManager } from "../metrics/MetricsManager";
 export class ClassroomScene {
   private readonly engine: Engine;
   private readonly canvas: HTMLCanvasElement;
+  private readonly onReturnToMenu: () => void;
   private readonly telemetry: ActivityTelemetrySink | null;
 
   private scene: Scene | null = null;
@@ -35,16 +43,13 @@ export class ClassroomScene {
   private ambientBehaviorManager: AmbientBehaviorManager | null = null;
   private charactersReadyPromise: Promise<void> | null = null;
   private cameraManager: CameraManager | null = null;
-  private explorationPanel: HTMLElement | null = null;
-  private startActivityButton: HTMLButtonElement | null = null;
-  private activatePointerLockButton: HTMLButtonElement | null = null;
-  private releasePointerLockButton: HTMLButtonElement | null = null;
-  private audioToggleButton: HTMLButtonElement | null = null;
-  private pointerLockStatus: HTMLParagraphElement | null = null;
+  private explorationHud: ExplorationHud | null = null;
+  private guide: VirtualGuideManager | null = null;
+  private explorationVisuals: ExplorationVisuals | null = null;
   private unsubscribePointerLock: (() => void) | null = null;
   private evaluationHiddenMeshes: Mesh[] = [];
   private evaluationStarted = false;
-  private explorationAudioEnabled = true;
+  private explorationAudioEnabled = getExplorationSoundEnabled();
   private readonly handleExplorationPointerDownBound = (): void => {
     this.startExplorationAudio();
   };
@@ -55,10 +60,12 @@ export class ClassroomScene {
   constructor(
     engine: Engine,
     canvas: HTMLCanvasElement,
+    onReturnToMenu: () => void = () => {},
     telemetry?: ActivityTelemetrySink
   ) {
     this.engine = engine;
     this.canvas = canvas;
+    this.onReturnToMenu = onReturnToMenu;
     this.telemetry = telemetry ?? null;
   }
 
@@ -68,6 +75,7 @@ export class ClassroomScene {
 
     const classroomBuilder = new ClassroomBuilder(scene);
     const classroomLayout = classroomBuilder.build();
+    classroomLayout.evaluationHiddenMeshes.push(...createExplorationAccents(scene, "classroom"));
     this.evaluationHiddenMeshes = classroomLayout.evaluationHiddenMeshes;
 
     const shadowLight = this.configureLighting(scene);
@@ -76,6 +84,7 @@ export class ClassroomScene {
       classroomLayout.shadowCasters
     );
     this.configureImageProcessing(scene);
+    this.explorationVisuals = new ExplorationVisuals(scene, 'classroom', getExplorationQuality());
     this.optimizeStaticClassroom(scene);
 
     this.stimulusAnchor = this.createStimulusAnchor(
@@ -83,6 +92,7 @@ export class ClassroomScene {
       classroomLayout.stimulusAnchorPosition
     );
     this.audioManager = new AudioManager();
+    this.audioManager.setEnabled(this.explorationAudioEnabled);
     void this.audioManager.initialize(scene);
     this.characterManager = new CharacterManager(scene, { shadowGenerator });
     this.ambientBehaviorManager = new AmbientBehaviorManager(this.characterManager);
@@ -98,6 +108,7 @@ export class ClassroomScene {
       });
 
     this.cameraManager = new CameraManager({
+      onPointerLockError: () => this.explorationHud?.showLookUnavailable(),
       scene,
       canvas: this.canvas,
       explorationPosition: classroomLayout.explorationEyePosition,
@@ -108,14 +119,23 @@ export class ClassroomScene {
       bounds: classroomLayout.cameraBounds
     });
     this.cameraManager.enterExplorationMode();
+    configureSceneAntialiasing(scene);
 
     this.showExplorationPanel();
 
     this.scene = scene;
+    this.guide = new VirtualGuideManager(scene, {
+      theme: 'classroom', quality: getExplorationQuality(),
+      beforeOpen: () => { this.cameraManager?.disablePointerLock(); this.audioManager?.stopAmbientAudio(); },
+      onClose: () => {}, onMenu: this.onReturnToMenu,
+      onComplete: () => { this.startExplorationAudio(); void this.beginEvaluationFlow(); }
+    });
     return scene;
   }
 
   dispose(): void {
+    this.guide?.dispose(); this.guide = null;
+    this.explorationVisuals?.dispose(); this.explorationVisuals = null;
     this.removeExplorationPanel();
     this.activity?.dispose();
     this.ambientBehaviorManager?.dispose();
@@ -143,6 +163,7 @@ export class ClassroomScene {
     );
 
     ambientLight.intensity = 0.55;
+    ambientLight.diffuse = new Color3(0.88, 0.94, 1);
     ambientLight.groundColor = new Color3(0.36, 0.34, 0.3);
 
     const windowLight = new DirectionalLight(
@@ -152,7 +173,8 @@ export class ClassroomScene {
     );
 
     windowLight.position = new Vector3(-7.5, 5.2, -3.2);
-    windowLight.intensity = 0.9;
+    windowLight.intensity = 0.78;
+    windowLight.diffuse = new Color3(1, 0.95, 0.86);
 
     return windowLight;
   }
@@ -161,10 +183,12 @@ export class ClassroomScene {
     light: DirectionalLight,
     shadowCasters: Mesh[]
   ): ShadowGenerator {
-    const shadowGenerator = new ShadowGenerator(512, light);
+    const shadowGenerator = new ShadowGenerator(1024, light);
 
-    shadowGenerator.useExponentialShadowMap = true;
-    shadowGenerator.blurKernel = 8;
+    shadowGenerator.useBlurExponentialShadowMap = true;
+    shadowGenerator.useKernelBlur = true;
+    shadowGenerator.blurScale = 2;
+    shadowGenerator.blurKernel = 16;
     shadowGenerator.bias = 0.0005;
     shadowGenerator.normalBias = 0.02;
     shadowGenerator.setDarkness(0.36);
@@ -176,7 +200,7 @@ export class ClassroomScene {
     const shadowMap = shadowGenerator.getShadowMap();
 
     if (shadowMap) {
-      shadowMap.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
+      shadowMap.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONEVERYTWOFRAMES;
     }
 
     return shadowGenerator;
@@ -218,83 +242,31 @@ export class ClassroomScene {
 
   private showExplorationPanel(): void {
     this.removeExplorationPanel();
-
-    const panel = document.createElement("section");
-    panel.id = "explorationPanel";
-    panel.setAttribute("aria-live", "polite");
-
-    const title = document.createElement("h1");
-    title.textContent = "Explora el aula";
-
-    const movement = document.createElement("p");
-    movement.textContent = "W/A/S/D para caminar. Activa vista juego para mirar con el mouse.";
-
-    const pointerLockStatus = document.createElement("p");
-    pointerLockStatus.className = "pointerLockStatus";
-
-    const pointerLockActions = document.createElement("div");
-    pointerLockActions.className = "explorationActions";
-
-    const activatePointerLockButton = document.createElement("button");
-    activatePointerLockButton.type = "button";
-    activatePointerLockButton.className = "secondaryButton";
-    activatePointerLockButton.textContent = "Activar vista juego";
-    activatePointerLockButton.addEventListener("click", () => {
-      this.startExplorationAudio();
-      this.cameraManager?.enablePointerLock();
+    this.explorationHud = new ExplorationHud({
+      theme: "classroom",
+      onExplore: () => {
+        this.startExplorationAudio();
+        this.cameraManager?.enablePointerLock();
+      },
+      onRelease: () => this.cameraManager?.disablePointerLock(),
+      onStart: () => {
+        this.guide?.open();
+      },
+      onSound: () => this.toggleExplorationAudio(),
+      onMenu: this.onReturnToMenu,
+      onQuality: quality => {
+        saveExplorationQuality(quality); this.guide?.setQuality(quality);
+        if (this.scene && !this.evaluationStarted) {
+          this.explorationVisuals?.dispose();
+          this.explorationVisuals = new ExplorationVisuals(this.scene, 'classroom', quality);
+        }
+      }
     });
-
-    const releasePointerLockButton = document.createElement("button");
-    releasePointerLockButton.type = "button";
-    releasePointerLockButton.className = "secondaryButton";
-    releasePointerLockButton.textContent = "Liberar mouse";
-    releasePointerLockButton.addEventListener("click", () => {
-      this.cameraManager?.disablePointerLock();
-    });
-
-    pointerLockActions.append(activatePointerLockButton, releasePointerLockButton);
-
-    const prompt = document.createElement("p");
-    prompt.textContent = "Cuando estes listo, comienza la actividad.";
-
-    const audioToggleButton = document.createElement("button");
-    audioToggleButton.type = "button";
-    audioToggleButton.className = "secondaryButton";
-    audioToggleButton.addEventListener("click", () => {
-      this.toggleExplorationAudio();
-    });
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = "Comenzar actividad";
-    button.addEventListener("click", () => {
-      this.startExplorationAudio();
-      void this.beginEvaluationFlow();
-    });
-
-    panel.append(
-      title,
-      movement,
-      pointerLockStatus,
-      pointerLockActions,
-      prompt,
-      audioToggleButton,
-      button
-    );
-    document.body.appendChild(panel);
-
-    this.explorationPanel = panel;
-    this.startActivityButton = button;
-    this.activatePointerLockButton = activatePointerLockButton;
-    this.releasePointerLockButton = releasePointerLockButton;
-    this.audioToggleButton = audioToggleButton;
-    this.pointerLockStatus = pointerLockStatus;
     this.unsubscribePointerLock = this.cameraManager?.onPointerLockChange((locked) => {
       this.updatePointerLockUi(locked);
     }) ?? null;
     this.canvas.addEventListener("pointerdown", this.handleExplorationPointerDownBound);
     document.addEventListener("keydown", this.handleExplorationKeyDownBound);
-    this.updatePointerLockUi(this.cameraManager?.isPointerLocked() ?? false);
     this.updateAudioToggleUi();
   }
 
@@ -313,35 +285,25 @@ export class ClassroomScene {
     }
 
     this.evaluationStarted = true;
+    this.guide?.dispose(); this.guide = null;
+    this.explorationVisuals?.dispose(); this.explorationVisuals = null;
     this.setExplorationPanelBusy();
     cameraManager.disablePointerLock();
     this.ambientBehaviorManager?.stop();
     this.hideEvaluationObstructions();
 
     await this.charactersReadyPromise;
+    if (this.scene !== scene || scene.isDisposed) return;
     this.characterManager?.setMode("evaluation");
     await cameraManager.enterEvaluationMode();
+    if (this.scene !== scene || scene.isDisposed) return;
 
     this.removeExplorationPanel();
     this.startGoNoGoInstructions(scene, stimulusAnchor);
   }
 
   private setExplorationPanelBusy(): void {
-    if (!this.startActivityButton) {
-      return;
-    }
-
-    this.startActivityButton.disabled = true;
-    this.startActivityButton.textContent = "Preparando actividad...";
-    if (this.activatePointerLockButton) {
-      this.activatePointerLockButton.disabled = true;
-    }
-    if (this.releasePointerLockButton) {
-      this.releasePointerLockButton.disabled = true;
-    }
-    if (this.audioToggleButton) {
-      this.audioToggleButton.disabled = true;
-    }
+    this.explorationHud?.setBusy();
   }
 
   private startGoNoGoInstructions(
@@ -390,13 +352,8 @@ export class ClassroomScene {
       this.handleExplorationPointerDownBound
     );
     document.removeEventListener("keydown", this.handleExplorationKeyDownBound);
-    this.explorationPanel?.remove();
-    this.explorationPanel = null;
-    this.startActivityButton = null;
-    this.activatePointerLockButton = null;
-    this.releasePointerLockButton = null;
-    this.audioToggleButton = null;
-    this.pointerLockStatus = null;
+    this.explorationHud?.dispose();
+    this.explorationHud = null;
   }
 
   private handleExplorationKeyDown(event: KeyboardEvent): void {
@@ -415,26 +372,11 @@ export class ClassroomScene {
   }
 
   private updatePointerLockUi(locked: boolean): void {
-    if (this.pointerLockStatus) {
-      this.pointerLockStatus.textContent = locked
-        ? "Vista juego activa. Mueve el mouse para observar. Esc o Q libera el mouse."
-        : "Mouse libre. Haz clic en el aula o usa el boton para activar vista juego.";
-    }
-
-    if (this.activatePointerLockButton) {
-      this.activatePointerLockButton.disabled = locked || this.evaluationStarted;
-      this.activatePointerLockButton.textContent = locked
-        ? "Vista juego activa"
-        : "Activar vista juego";
-    }
-
-    if (this.releasePointerLockButton) {
-      this.releasePointerLockButton.disabled = !locked || this.evaluationStarted;
-      this.releasePointerLockButton.textContent = locked ? "Liberar mouse (Q)" : "Mouse libre";
-    }
+    this.explorationHud?.setPointerLocked(locked);
   }
 
   private startExplorationAudio(): void {
+    if (this.guide?.isOpen) return;
     if (!this.explorationAudioEnabled) {
       return;
     }
@@ -446,6 +388,7 @@ export class ClassroomScene {
 
   private toggleExplorationAudio(): void {
     this.explorationAudioEnabled = !this.explorationAudioEnabled;
+    saveExplorationSoundEnabled(this.explorationAudioEnabled);
     this.audioManager?.setEnabled(this.explorationAudioEnabled);
 
     if (this.explorationAudioEnabled) {
@@ -456,12 +399,6 @@ export class ClassroomScene {
   }
 
   private updateAudioToggleUi(): void {
-    if (!this.audioToggleButton) {
-      return;
-    }
-
-    this.audioToggleButton.textContent = this.explorationAudioEnabled
-      ? "Audio: ON"
-      : "Audio: OFF";
+    this.explorationHud?.setSoundEnabled(this.explorationAudioEnabled);
   }
 }

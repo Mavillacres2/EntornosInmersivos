@@ -7,6 +7,8 @@ import {
   Vector3
 } from "@babylonjs/core";
 import type { Mesh, Scene } from "@babylonjs/core";
+import { createSoftBox } from "./ModernGeometry";
+import { createSurfaceMaterial } from "./SurfaceMaterials";
 
 interface ClassroomMaterials {
   accentCoral: StandardMaterial;
@@ -129,11 +131,11 @@ export class ClassroomBuilder {
   }
 
   private createMaterials(): ClassroomMaterials {
-    const wall = this.createMaterial("wallMaterial", new Color3(0.56, 0.78, 0.72));
+    const wall = this.createMaterial("wallMaterial", new Color3(0.72, 0.85, 0.79));
     const ceiling = this.createMaterial("ceilingMaterial", new Color3(0.91, 0.91, 0.88));
-    const floor = this.createMaterial("floorMaterial", new Color3(0.73, 0.72, 0.67));
-    const wood = this.createMaterial("lightWoodMaterial", new Color3(0.86, 0.76, 0.52));
-    const chair = this.createMaterial("chairFrameMaterial", new Color3(0.88, 0.86, 0.7));
+    const floor = this.createMaterial("floorMaterial", new Color3(0.82, 0.8, 0.74));
+    const wood = this.createMaterial("lightWoodMaterial", new Color3(0.88, 0.75, 0.56));
+    const chair = this.createMaterial("chairFrameMaterial", new Color3(0.91, 0.88, 0.78));
     const board = this.createMaterial("boardMaterial", new Color3(0.06, 0.27, 0.2));
     const boardFrame = this.createMaterial("boardFrameMaterial", new Color3(0.76, 0.57, 0.3));
     const darkTrim = this.createMaterial("darkTrimMaterial", new Color3(0.28, 0.31, 0.28));
@@ -151,7 +153,7 @@ export class ClassroomBuilder {
     const projector = this.createMaterial("projectorMaterial", new Color3(0.23, 0.26, 0.25));
     const shelf = this.createMaterial("shelfMaterial", new Color3(0.78, 0.61, 0.48));
     const warmFrame = this.createMaterial("warmFrameMaterial", new Color3(0.9, 0.65, 0.16));
-    const accentCoral = this.createMaterial("accentCoralMaterial", new Color3(0.68, 0.22, 0.18));
+    const accentCoral = this.createMaterial("accentCoralMaterial", new Color3(0.82, 0.39, 0.31));
     const accentGreen = this.createMaterial("accentGreenMaterial", new Color3(0.42, 0.6, 0.38));
     const accentOrange = this.createMaterial("accentOrangeMaterial", new Color3(0.82, 0.48, 0.22));
     const accentSky = this.createMaterial("accentSkyMaterial", new Color3(0.44, 0.67, 0.78));
@@ -203,11 +205,7 @@ export class ClassroomBuilder {
   }
 
   private createMaterial(name: string, color: Color3): StandardMaterial {
-    const material = new StandardMaterial(name, this.scene);
-    material.diffuseColor = color;
-    material.specularColor = new Color3(0.12, 0.12, 0.12);
-
-    return material;
+    return createSurfaceMaterial(name, color, this.scene);
   }
 
   private createRoom(): void {
@@ -287,15 +285,17 @@ export class ClassroomBuilder {
   }
 
   private createFloorDepthLines(): void {
+    const joint = this.createMaterial("classroomFloorJointMaterial", new Color3(0.72, 0.71, 0.65));
+    joint.specularColor = Color3.Black();
     [-8.65, -6.75, -4.85, -2.95, -1.05, 0.85, 2.75, 4.65].forEach(
       (zPosition, index) => {
         this.createBox({
           name: `floorCrossLine${index + 1}`,
           width: 17.25,
           height: 0.012,
-          depth: 0.035,
+          depth: 0.012,
           position: new Vector3(0, 0.014, zPosition),
-          material: this.materials.darkTrim
+          material: joint
         });
       }
     );
@@ -303,11 +303,11 @@ export class ClassroomBuilder {
     [-5.75, -2.25, 1.25, 4.75].forEach((xPosition, index) => {
       this.createBox({
         name: `floorPerspectiveLine${index + 1}`,
-        width: 0.035,
+        width: 0.012,
         height: 0.012,
         depth: 15.25,
         position: new Vector3(xPosition, 0.016, -2),
-        material: this.materials.darkTrim
+        material: joint
       });
     });
   }
@@ -995,7 +995,7 @@ export class ClassroomBuilder {
         height: 0.42 * scale,
         diameterTop: 0.5 * scale,
         diameterBottom: 0.38 * scale,
-        tessellation: 14
+        tessellation: 32
       },
       this.scene
     );
@@ -1010,7 +1010,7 @@ export class ClassroomBuilder {
       {
         height: 0.035 * scale,
         diameter: 0.43 * scale,
-        tessellation: 14
+        tessellation: 32
       },
       this.scene
     );
@@ -1025,7 +1025,7 @@ export class ClassroomBuilder {
       {
         height: 0.82 * scale,
         diameter: 0.055 * scale,
-        tessellation: 8
+        tessellation: 32
       },
       this.scene
     );
@@ -1044,7 +1044,7 @@ export class ClassroomBuilder {
         `${name}Leaf${index + 1}`,
         {
           diameter: 0.48 * scale,
-          segments: 12
+          segments: 24
         },
         this.scene
       );
@@ -1131,7 +1131,7 @@ export class ClassroomBuilder {
       "floorToyBall",
       {
         diameter: 0.36,
-        segments: 16
+        segments: 24
       },
       this.scene
     );
@@ -1145,7 +1145,7 @@ export class ClassroomBuilder {
       "sideFloorToyBall",
       {
         diameter: 0.3,
-        segments: 14
+        segments: 24
       },
       this.scene
     );
@@ -1160,7 +1160,7 @@ export class ClassroomBuilder {
       {
         diameter: 0.46,
         thickness: 0.045,
-        tessellation: 18
+        tessellation: 32
       },
       this.scene
     );
@@ -1177,7 +1177,7 @@ export class ClassroomBuilder {
       {
         diameter: 0.42,
         thickness: 0.04,
-        tessellation: 18
+        tessellation: 32
       },
       this.scene
     );
@@ -1225,7 +1225,7 @@ export class ClassroomBuilder {
           {
             height: 0.07,
             diameter: 0.11,
-            tessellation: 10
+            tessellation: 32
           },
           this.scene
         );
@@ -1426,7 +1426,7 @@ export class ClassroomBuilder {
       "classroomGlobe",
       {
         diameter: 0.42,
-        segments: 16
+        segments: 24
       },
       this.scene
     );
@@ -1440,7 +1440,7 @@ export class ClassroomBuilder {
       "classroomGlobeLandPatch",
       {
         diameter: 0.18,
-        segments: 8
+        segments: 24
       },
       this.scene
     );
@@ -1571,7 +1571,7 @@ export class ClassroomBuilder {
       {
         height: 0.68,
         diameter: 0.12,
-        tessellation: 10
+        tessellation: 32
       },
       this.scene
     );
@@ -1584,7 +1584,7 @@ export class ClassroomBuilder {
       `${name}ExteriorTreeLeaves`,
       {
         diameter: 0.52,
-        segments: 14
+        segments: 24
       },
       this.scene
     );
@@ -1694,7 +1694,7 @@ export class ClassroomBuilder {
       "doorKnob",
       {
         diameter: 0.14,
-        segments: 12
+        segments: 24
       },
       this.scene
     );
@@ -2260,7 +2260,7 @@ export class ClassroomBuilder {
   }
 
   private createBox(options: BoxOptions): Mesh {
-    const mesh = MeshBuilder.CreateBox(
+    const mesh = createSoftBox(
       options.name,
       {
         width: options.width,
@@ -2276,6 +2276,7 @@ export class ClassroomBuilder {
     mesh.rotation.z = options.rotationZ ?? 0;
     mesh.material = options.material;
     mesh.isPickable = false;
+    mesh.receiveShadows = options.receivesShadow ?? !!options.castsShadow;
 
     if (options.castsShadow) {
       this.shadowCasters.push(mesh);

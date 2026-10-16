@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import { ActivityContextAdapter } from "../synchronization/ActivityContextAdapter";
 
 describe("ActivityContextAdapter", () => {
+  it('rejects late callbacks from an abandoned attempt of the same scenario',()=>{
+    const adapter=new ActivityContextAdapter();adapter.startSession('session',0);adapter.setScenario('classroom','go-no-go','old');const old=adapter.createTelemetrySink('classroom','go-no-go');
+    adapter.clearActivity();adapter.setScenario('classroom','go-no-go','new');const listener=vi.fn();adapter.onEvent(listener);
+    old.onActivityResult({totalTrials:99});old.onStateChange('finished');expect(listener).not.toHaveBeenCalled();expect(adapter.getContext().activityState).toBe('exploring');expect(adapter.getContext().attemptId).toBe('new');
+  });
   it("sincroniza escenario, bloque, ensayo y distractor con tiempo de sesion", () => {
     const adapter = new ActivityContextAdapter();
     const listener = vi.fn();

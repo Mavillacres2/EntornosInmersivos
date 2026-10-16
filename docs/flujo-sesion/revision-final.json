@@ -1,0 +1,43 @@
+{
+  "state": "SESSION_FINISHED",
+  "progress": {
+    "classroom": {
+      "status": "completed",
+      "attemptId": "b63d07f5-8246-467e-9b13-b84e838d005f",
+      "saving": false
+    },
+    "space-station": {
+      "status": "completed",
+      "attemptId": "f7e20418-90ce-4872-8362-6104e67d76b0",
+      "saving": false
+    },
+    "interactive-museum": {
+      "status": "completed",
+      "attemptId": "c99cfb85-6a05-42b8-8337-48519fadfa30",
+      "saving": false
+    }
+  },
+  "records": [
+    {
+      "type": "started",
+      "scenario": "classroom",
+      "attemptId": "b63d07f5-8246-467e-9b13-b84e838d005f"
+    },
+    {
+      "type": "started",
+      "scenario": "space-station",
+      "attemptId": "f7e20418-90ce-4872-8362-6104e67d76b0"
+    },
+    {
+      "type": "started",
+      "scenario": "interactive-museum",
+      "attemptId": "c99cfb85-6a05-42b8-8337-48519fadfa30"
+    },
+    {
+      "type": "finish-session"
+    }
+  ],
+  "meshes": 0,
+  "scenes": 0,
+  "queued": 0
+}

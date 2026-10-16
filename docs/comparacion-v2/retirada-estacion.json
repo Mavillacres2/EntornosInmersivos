@@ -1,0 +1,16 @@
+{
+  "fps": 1.7,
+  "renderSize": [
+    1280,
+    800
+  ],
+  "meshes": 372,
+  "guideMeshes": 0,
+  "artMeshes": 0,
+  "pbr": 0,
+  "events": [
+    "start: space-ready",
+    "cancel: space-ready",
+    "written-fallback: space-ready"
+  ]
+}

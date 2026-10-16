@@ -12,6 +12,8 @@ import {
   Vector3
 } from "@babylonjs/core";
 import type { Mesh, Scene } from "@babylonjs/core";
+import { createSoftBox } from "./ModernGeometry";
+import { createSurfaceMaterial } from "./SurfaceMaterials";
 
 import type { MuseumDistractorAnchors } from "../activities/visual-discrimination/VisualDiscriminationDistractorManager";
 import type { CameraBounds } from "../camera/CameraManager";
@@ -122,13 +124,13 @@ export class MuseumBuilder {
   }
 
   private createMaterials(): MuseumMaterials {
-    const wall = this.createMaterial("museumWarmWallMaterial", new Color3(0.78, 0.76, 0.68));
+    const wall = this.createMaterial("museumWarmWallMaterial", new Color3(0.88, 0.85, 0.78));
     const accentWall = this.createMaterial("museumPetrolAccentWallMaterial", new Color3(0.08, 0.24, 0.27));
-    const floor = this.createMaterial("museumPolishedFloorMaterial", new Color3(0.68, 0.66, 0.6));
+    const floor = this.createMaterial("museumPolishedFloorMaterial", new Color3(0.77, 0.75, 0.7));
     const trim = this.createMaterial("museumSoftTrimMaterial", new Color3(0.34, 0.35, 0.32));
     const panel = this.createMaterial("museumPanelMaterial", new Color3(0.06, 0.22, 0.24));
     const warm = this.createMaterial("museumWarmLightMaterial", new Color3(0.9, 0.78, 0.52));
-    const gold = this.createMaterial("museumMutedGoldMaterial", new Color3(0.74, 0.58, 0.28));
+    const gold = this.createMaterial("museumMutedGoldMaterial", new Color3(0.8, 0.65, 0.38));
     const accent = this.createMaterial("museumBlueAccentMaterial", new Color3(0.34, 0.55, 0.64));
     const display = this.createMaterial("museumDisplayMaterial", new Color3(0.1, 0.32, 0.35));
     const glass = this.createMaterial("museumGlassMaterial", new Color3(0.74, 0.88, 0.9));
@@ -175,6 +177,7 @@ export class MuseumBuilder {
 
     shadowLight.position = new Vector3(-4.2, 5.7, -2.4);
     shadowLight.intensity = 0.68;
+    shadowLight.diffuse = new Color3(1, 0.94, 0.84);
 
     [
       new Vector3(-4.7, 3.1, -0.9),
@@ -249,9 +252,9 @@ export class MuseumBuilder {
   }
 
   private createSubtleFloorTiles(): void {
-    const joint = this.createMaterial("museumFloorJointMaterial", new Color3(0.5, 0.49, 0.45));
+    const joint = this.createMaterial("museumFloorJointMaterial", new Color3(0.68, 0.66, 0.61));
 
-    joint.alpha = 0.42;
+    joint.alpha = 0.28;
     [-5.6, -3.2, -0.8, 1.6, 4].forEach((zPosition, index) => {
       this.createBox({ name: `museumSubtleFloorJointZ${index + 1}`, width: 14.4, height: 0.008, depth: 0.018, position: new Vector3(0, 0.012, zPosition), material: joint });
     });
@@ -483,7 +486,7 @@ export class MuseumBuilder {
   private createWelcomeOrbDisplay(position: Vector3): void {
     this.createPedestal("museumWelcomeOrbPedestal", position, 0.72, 0.54, "Explora");
 
-    const orb = MeshBuilder.CreateSphere("museumWelcomeOrb", { diameter: 0.32, segments: 18 }, this.scene);
+    const orb = MeshBuilder.CreateSphere("museumWelcomeOrb", { diameter: 0.32, segments: 24 }, this.scene);
     const ringA = MeshBuilder.CreateTorus("museumWelcomeOrbRingA", { diameter: 0.52, thickness: 0.018, tessellation: 44 }, this.scene);
     const ringB = MeshBuilder.CreateTorus("museumWelcomeOrbRingB", { diameter: 0.42, thickness: 0.014, tessellation: 36 }, this.scene);
 
@@ -562,7 +565,7 @@ export class MuseumBuilder {
       { x: -0.22, z: 0.18, diameter: 0.09, material: this.materials.gold },
       { x: 0.32, z: 0.2, diameter: 0.1, material: this.materials.stone }
     ].forEach((item, index) => {
-      const paperweight = MeshBuilder.CreateSphere(`museumGuideTableObject${index + 1}`, { diameter: item.diameter, segments: 12 }, this.scene);
+      const paperweight = MeshBuilder.CreateSphere(`museumGuideTableObject${index + 1}`, { diameter: item.diameter, segments: 24 }, this.scene);
 
       paperweight.position = position.add(new Vector3(item.x, 0.73, item.z));
       paperweight.material = item.material;
@@ -576,8 +579,8 @@ export class MuseumBuilder {
     const postPositions = [-1.8, -0.6, 0.6, 1.8];
 
     postPositions.forEach((xPosition, index) => {
-      const post = MeshBuilder.CreateCylinder(`museumReceptionPost${index + 1}`, { height: 0.78, diameter: 0.055, tessellation: 10 }, this.scene);
-      const cap = MeshBuilder.CreateSphere(`museumReceptionPostCap${index + 1}`, { diameter: 0.14, segments: 10 }, this.scene);
+      const post = MeshBuilder.CreateCylinder(`museumReceptionPost${index + 1}`, { height: 0.78, diameter: 0.055, tessellation: 32 }, this.scene);
+      const cap = MeshBuilder.CreateSphere(`museumReceptionPostCap${index + 1}`, { diameter: 0.14, segments: 24 }, this.scene);
 
       post.position = new Vector3(xPosition, 0.39, -6.04);
       post.material = this.materials.gold;
@@ -591,7 +594,7 @@ export class MuseumBuilder {
     for (let index = 0; index < postPositions.length - 1; index += 1) {
       const start = postPositions[index];
       const end = postPositions[index + 1];
-      const rope = MeshBuilder.CreateCylinder(`museumReceptionRope${index + 1}`, { height: end - start, diameter: 0.035, tessellation: 10 }, this.scene);
+      const rope = MeshBuilder.CreateCylinder(`museumReceptionRope${index + 1}`, { height: end - start, diameter: 0.035, tessellation: 32 }, this.scene);
 
       rope.position = new Vector3((start + end) / 2, 0.76, -6.04);
       rope.rotation.z = Math.PI / 2;
@@ -694,7 +697,7 @@ export class MuseumBuilder {
     });
 
     const coreMaterial = this.createMaterial("centralPerceptionCoreMaterial", new Color3(0.88, 0.76, 0.44));
-    const core = MeshBuilder.CreateSphere("centralPerceptionCore", { diameter: 0.36, segments: 20 }, this.scene);
+    const core = MeshBuilder.CreateSphere("centralPerceptionCore", { diameter: 0.36, segments: 24 }, this.scene);
 
     coreMaterial.emissiveColor = new Color3(0.16, 0.11, 0.02);
     core.parent = root;
@@ -1249,7 +1252,7 @@ export class MuseumBuilder {
       return;
     }
 
-    const lens = MeshBuilder.CreateSphere(name, { diameter: 0.38, segments: 20 }, this.scene);
+    const lens = MeshBuilder.CreateSphere(name, { diameter: 0.38, segments: 24 }, this.scene);
 
     lens.position = position;
     lens.scaling.z = 0.18;
@@ -1260,14 +1263,14 @@ export class MuseumBuilder {
 
   private createSolarSystemModel(position: Vector3): void {
     this.createPedestal("solarSystemPedestal", position, 1.3, 0.64, "Sistema solar");
-    const sun = MeshBuilder.CreateSphere("museumSunModel", { diameter: 0.28, segments: 18 }, this.scene);
+    const sun = MeshBuilder.CreateSphere("museumSunModel", { diameter: 0.28, segments: 24 }, this.scene);
 
     sun.position = position.add(new Vector3(0, 1.08, 0));
     sun.material = this.materials.gold;
     sun.isPickable = false;
     [0.32, 0.52, 0.72].forEach((radius, index) => {
       const orbit = MeshBuilder.CreateTorus(`museumOrbit${index + 1}`, { diameter: radius * 2, thickness: 0.008, tessellation: 40 }, this.scene);
-      const planet = MeshBuilder.CreateSphere(`museumPlanet${index + 1}`, { diameter: 0.08 + index * 0.025, segments: 12 }, this.scene);
+      const planet = MeshBuilder.CreateSphere(`museumPlanet${index + 1}`, { diameter: 0.08 + index * 0.025, segments: 24 }, this.scene);
 
       orbit.position = sun.position.clone();
       orbit.rotation.x = Math.PI / 2;
@@ -1286,10 +1289,10 @@ export class MuseumBuilder {
       const angle = index * 0.62;
       const left = position.add(new Vector3(Math.cos(angle) * 0.28, y, Math.sin(angle) * 0.28));
       const right = position.add(new Vector3(Math.cos(angle + Math.PI) * 0.28, y, Math.sin(angle + Math.PI) * 0.28));
-      const rung = MeshBuilder.CreateCylinder(`museumDnaRung${index + 1}`, { height: Vector3.Distance(left, right), diameter: 0.018, tessellation: 8 }, this.scene);
+      const rung = MeshBuilder.CreateCylinder(`museumDnaRung${index + 1}`, { height: Vector3.Distance(left, right), diameter: 0.018, tessellation: 32 }, this.scene);
 
       [left, right].forEach((point, pointIndex) => {
-        const sphere = MeshBuilder.CreateSphere(`museumDnaNode${index + 1}-${pointIndex + 1}`, { diameter: 0.07, segments: 10 }, this.scene);
+        const sphere = MeshBuilder.CreateSphere(`museumDnaNode${index + 1}-${pointIndex + 1}`, { diameter: 0.07, segments: 24 }, this.scene);
 
         sphere.position = point;
         sphere.material = pointIndex === 0 ? this.materials.gold : this.materials.accent;
@@ -1345,14 +1348,14 @@ export class MuseumBuilder {
 
   private createNeuronModel(position: Vector3): void {
     this.createPedestal("neuronPedestal", position, 1.15, 0.62, "Como percibimos?");
-    const center = MeshBuilder.CreateSphere("museumNeuronCenter", { diameter: 0.24, segments: 14 }, this.scene);
+    const center = MeshBuilder.CreateSphere("museumNeuronCenter", { diameter: 0.24, segments: 24 }, this.scene);
 
     center.position = position.add(new Vector3(0, 1.12, 0));
     center.material = this.materials.warm;
     center.isPickable = false;
     for (let index = 0; index < 7; index += 1) {
       const angle = index * Math.PI * 2 / 7;
-      const dendrite = MeshBuilder.CreateCylinder(`museumNeuronDendrite${index + 1}`, { height: 0.58, diameter: 0.025, tessellation: 8 }, this.scene);
+      const dendrite = MeshBuilder.CreateCylinder(`museumNeuronDendrite${index + 1}`, { height: 0.58, diameter: 0.025, tessellation: 32 }, this.scene);
 
       dendrite.position = center.position.add(new Vector3(Math.cos(angle) * 0.22, 0, Math.sin(angle) * 0.22));
       dendrite.rotation.z = Math.PI / 2;
@@ -1391,7 +1394,7 @@ export class MuseumBuilder {
   private createAbstractSphereSculpture(position: Vector3, title: string): void {
     this.createPedestal("abstractSpherePedestal", position, 1, 0.7, title);
     [-0.22, 0.02, 0.24].forEach((offset, index) => {
-      const sphere = MeshBuilder.CreateSphere(`abstractSphereSculpture${index + 1}`, { diameter: 0.36 - index * 0.05, segments: 16 }, this.scene);
+      const sphere = MeshBuilder.CreateSphere(`abstractSphereSculpture${index + 1}`, { diameter: 0.36 - index * 0.05, segments: 24 }, this.scene);
 
       sphere.position = position.add(new Vector3(offset, 1.03 + index * 0.18, index * 0.08));
       sphere.material = index % 2 === 0 ? this.materials.gold : this.materials.accent;
@@ -1412,9 +1415,9 @@ export class MuseumBuilder {
 
   private createHumanAbstractSculpture(position: Vector3, title: string): void {
     this.createPedestal("humanSculpturePedestal", position, 0.92, 0.68, title);
-    const body = MeshBuilder.CreateCylinder("humanAbstractBody", { height: 0.72, diameter: 0.16, tessellation: 12 }, this.scene);
-    const head = MeshBuilder.CreateSphere("humanAbstractHead", { diameter: 0.22, segments: 12 }, this.scene);
-    const arm = MeshBuilder.CreateCylinder("humanAbstractArm", { height: 0.58, diameter: 0.055, tessellation: 8 }, this.scene);
+    const body = MeshBuilder.CreateCylinder("humanAbstractBody", { height: 0.72, diameter: 0.16, tessellation: 32 }, this.scene);
+    const head = MeshBuilder.CreateSphere("humanAbstractHead", { diameter: 0.22, segments: 24 }, this.scene);
+    const arm = MeshBuilder.CreateCylinder("humanAbstractArm", { height: 0.58, diameter: 0.055, tessellation: 32 }, this.scene);
 
     body.position = position.add(new Vector3(0, 1.1, 0));
     head.position = position.add(new Vector3(0, 1.58, 0));
@@ -1435,7 +1438,7 @@ export class MuseumBuilder {
       new Vector3(-0.28, 1.38, -0.18),
       new Vector3(0.08, 1.68, 0.26)
     ].forEach((point, index) => {
-      const sphere = MeshBuilder.CreateSphere(`moleculeNode${index + 1}`, { diameter: index === 0 ? 0.24 : 0.16, segments: 12 }, this.scene);
+      const sphere = MeshBuilder.CreateSphere(`moleculeNode${index + 1}`, { diameter: index === 0 ? 0.24 : 0.16, segments: 24 }, this.scene);
 
       sphere.position = position.add(point);
       sphere.material = index % 2 === 0 ? this.materials.gold : this.materials.accent;
@@ -1465,7 +1468,7 @@ export class MuseumBuilder {
   private createPlant(position: Vector3, scale: number): void {
     this.createBox({ name: `museumPlantPot${position.x}-${position.z}`, width: 0.32 * scale, height: 0.3 * scale, depth: 0.32 * scale, position: position.add(new Vector3(0, 0.15 * scale, 0)), material: this.materials.charcoal, castsShadow: true, collides: true });
     for (let index = 0; index < 5; index += 1) {
-      const leaf = MeshBuilder.CreateSphere(`museumPlantLeaf${position.x}-${position.z}-${index + 1}`, { diameter: 0.28 * scale, segments: 10 }, this.scene);
+      const leaf = MeshBuilder.CreateSphere(`museumPlantLeaf${position.x}-${position.z}-${index + 1}`, { diameter: 0.28 * scale, segments: 24 }, this.scene);
 
       leaf.position = position.add(new Vector3(Math.cos(index * 1.26) * 0.16 * scale, 0.48 * scale + index * 0.035, Math.sin(index * 1.26) * 0.16 * scale));
       leaf.scaling.set(0.7, 1.35, 0.45);
@@ -1581,18 +1584,13 @@ export class MuseumBuilder {
   }
 
   private createMaterial(name: string, color: Color3): StandardMaterial {
-    const material = new StandardMaterial(name, this.scene);
-
-    material.diffuseColor = color;
-    material.specularColor = new Color3(0.1, 0.11, 0.1);
-
-    return material;
+    return createSurfaceMaterial(name, color, this.scene);
   }
 
   private createBox(options: BoxOptions): Mesh {
     this.warnIfBoxTouchesAssessmentClearZone(options);
 
-    const mesh = MeshBuilder.CreateBox(
+    const mesh = createSoftBox(
       options.name,
       { width: options.width, height: options.height, depth: options.depth },
       this.scene
@@ -1604,6 +1602,7 @@ export class MuseumBuilder {
     mesh.rotation.z = options.rotationZ ?? 0;
     mesh.material = options.material;
     mesh.isPickable = false;
+    mesh.receiveShadows = options.receivesShadow ?? !!options.castsShadow;
 
     if (options.dynamic) {
       mesh.metadata = { dynamic: true };

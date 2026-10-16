@@ -1,0 +1,25 @@
+{
+  "version": "es-MX-v3",
+  "voice": "Microsoft Sabina Desktop",
+  "locale": "es-MX",
+  "rate": 0,
+  "sentencePauseMs": 160,
+  "classroom": [
+    { "id": "classroom-welcome", "state": "GREETING", "title": "¡Hola! Soy Luma", "text": "¡Hola! Soy Luma, tu guía del aula. Vamos a jugar con círculos de colores. Primero te explicaré las reglas y después podrás practicar." },
+    { "id": "classroom-rules", "state": "EXPLAINING", "title": "Verde: responde. Rojo: espera", "text": "Cuando aparezca un círculo verde, presiona la barra espaciadora. Si el círculo es rojo, espera sin responder." },
+    { "id": "classroom-demo", "state": "DEMONSTRATING", "title": "Recuerda las dos reglas", "text": "Recuerda: verde significa presionar espacio. Rojo significa esperar. Si quieres, podemos escuchar las instrucciones otra vez." },
+    { "id": "classroom-ready", "state": "FAREWELL", "title": "Ahora viene la práctica", "text": "Ahora veremos las instrucciones del juego. La práctica viene primero. Yo me retiro para que puedas concentrarte. Cuando estés listo, selecciona ir a las instrucciones." }
+  ],
+  "space": [
+    { "id": "space-welcome", "state": "GREETING", "title": "¡Hola! Soy Nova", "text": "¡Hola! Soy Nova. Bienvenido a la estación espacial. Nuestra misión será buscar una letra. Primero aprenderemos las reglas y después practicarás." },
+    { "id": "space-rules", "state": "EXPLAINING", "title": "Busca la letra X", "text": "Verás diferentes letras en la pantalla. Presiona la barra espaciadora cuando aparezca la letra equis. Con otras letras, espera sin responder." },
+    { "id": "space-demo", "state": "DEMONSTRATING", "title": "X: responde. Otras letras: espera", "text": "Esta es la letra que buscamos: equis. Cuando la veas en el juego, presiona espacio. Si aparece otra letra, espera. Puedes escuchar las instrucciones otra vez." },
+    { "id": "space-ready", "state": "FAREWELL", "title": "Preparados para practicar", "text": "Ahora verás las instrucciones del juego. Primero vas a practicar. Yo me retiro durante la misión. Cuando estés listo, selecciona ir a las instrucciones." }
+  ],
+  "museum": [
+    { "id": "museum-welcome", "state": "GREETING", "title": "¡Hola! Soy Mica", "text": "¡Hola! Soy Mica, tu guía del museo. Vamos a observar caras y descubrir sus diferencias. Primero conocerás la regla y después practicarás." },
+    { "id": "museum-rules", "state": "EXPLAINING", "title": "Encuentra la cara diferente", "text": "Mira las tres caras. Dos son iguales y una es diferente. Apunta a la cara diferente y haz clic." },
+    { "id": "museum-demo", "state": "DEMONSTRATING", "title": "Observa, compara y elige", "text": "Compara las tres caras del juego. Busca cuál es diferente de las otras dos. En la práctica verás si acertaste. Puedes escuchar la regla otra vez antes de continuar." },
+    { "id": "museum-ready", "state": "FAREWELL", "title": "Vamos a practicar", "text": "Ahora verás las instrucciones y podrás comenzar la práctica. Yo me retiro para que observes con calma. Cuando estés listo, selecciona ir a las instrucciones." }
+  ]
+}

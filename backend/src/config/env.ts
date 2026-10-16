@@ -1,6 +1,9 @@
 import "dotenv/config";
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 export interface AppConfig {
+  specialistPasswordHash?: string;
   port: number;
   mongodbUri: string;
   mongodbDbName: string;
@@ -17,7 +20,10 @@ function readPositiveInteger(name: string, fallback: number): number {
 }
 
 export function loadConfig(): AppConfig {
+  let passwordHash=process.env.SPECIALIST_PASSWORD_HASH;
+  if(!passwordHash){try{passwordHash=JSON.parse(readFileSync(fileURLToPath(new URL('../../specialist-credentials.json',import.meta.url)),'utf8')).passwordHash;}catch{/* Unconfigured access fails closed. */}}
   return {
+    specialistPasswordHash:passwordHash,
     port: readPositiveInteger("PORT", 3001),
     mongodbUri: process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017",
     mongodbDbName: process.env.MONGODB_DB_NAME ?? "entornos_inmersivos",

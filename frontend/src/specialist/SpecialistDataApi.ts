@@ -27,6 +27,8 @@ export interface SessionDetail extends SessionListItem {
 }
 
 export interface TimelineSample {
+  attemptId?:string;
+  activityState?:string|null;
   elapsedMs: number;
   scenarioId: string | null;
   blockNumber: number | null;
@@ -69,7 +71,7 @@ export class SpecialistDataApi {
   }
 
   private async request<T>(path: string): Promise<T> {
-    const response = await fetch(`${ANALYSIS_CONFIG.apiBaseUrl}${path}`);
+    const response = await fetch(`${ANALYSIS_CONFIG.apiBaseUrl}${path}`,{credentials:'include',cache:'no-store'});
     const payload = await response.json().catch(() => ({})) as { error?: string };
     if (!response.ok) throw new Error(payload.error ?? "No se pudo consultar el servidor");
     return payload as T;

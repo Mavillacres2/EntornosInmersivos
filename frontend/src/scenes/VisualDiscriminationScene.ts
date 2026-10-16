@@ -1,3 +1,10 @@
+import { getExplorationSoundEnabled, saveExplorationSoundEnabled } from "../ui/ExplorationPreferences";
+import { VirtualGuideManager } from '../guides/VirtualGuideManager';
+import { ExplorationVisuals } from '../environment/ExplorationVisuals';
+import { getExplorationQuality, saveExplorationQuality } from '../ui/ExplorationQuality';
+import { createExplorationAccents } from "../environment/ExplorationAccents";
+import { ExplorationHud } from "../ui/ExplorationHud";
+import { configureSceneAntialiasing } from "./SceneVisuals";
 import {
   Color4,
   Ray,
@@ -28,19 +35,16 @@ export class VisualDiscriminationScene {
   private cameraManager: CameraManager | null = null;
   private museumCharacterManager: MuseumCharacterManager | null = null;
   private controller: VisualDiscriminationController | null = null;
-  private explorationPanel: HTMLElement | null = null;
-  private startActivityButton: HTMLButtonElement | null = null;
-  private activatePointerLockButton: HTMLButtonElement | null = null;
-  private releasePointerLockButton: HTMLButtonElement | null = null;
-  private audioToggleButton: HTMLButtonElement | null = null;
-  private pointerLockStatus: HTMLParagraphElement | null = null;
+  private explorationHud: ExplorationHud | null = null;
+  private guide: VirtualGuideManager | null = null;
+  private explorationVisuals: ExplorationVisuals | null = null;
   private evaluationHiddenMeshes: Mesh[] = [];
   private activityPanelMesh: Mesh | null = null;
   private evaluationEyePosition: Vector3 | null = null;
   private evaluationLookAt: Vector3 | null = null;
   private charactersReadyPromise: Promise<void> | null = null;
   private unsubscribePointerLock: (() => void) | null = null;
-  private museumAudioEnabled = true;
+  private museumAudioEnabled = getExplorationSoundEnabled();
   private evaluationStarted = false;
   private readonly handleExplorationPointerDownBound = (): void => {
     this.startMuseumAudio();
@@ -68,20 +72,24 @@ export class VisualDiscriminationScene {
 
     const museumBuilder = new MuseumBuilder(scene);
     const museumLayout = museumBuilder.build();
+    museumLayout.evaluationHiddenMeshes.push(...createExplorationAccents(scene, "museum"));
     const shadowGenerator = this.configureShadows(
       museumLayout.shadowLight,
       museumLayout.shadowCasters
     );
 
     this.configureImageProcessing(scene);
+    this.explorationVisuals = new ExplorationVisuals(scene, 'museum', getExplorationQuality());
     this.optimizeStaticMuseum(scene);
     this.audioManager = new AudioManager();
+    this.audioManager.setEnabled(this.museumAudioEnabled);
     void this.audioManager.initialize(scene);
     this.museumCharacterManager = new MuseumCharacterManager(scene);
     this.charactersReadyPromise = this.museumCharacterManager.initialize().catch((error: unknown) => {
       console.warn("No se pudieron cargar todos los visitantes del museo.", error);
     });
     this.cameraManager = new CameraManager({
+      onPointerLockError: () => this.explorationHud?.showLookUnavailable(),
       scene,
       canvas: this.canvas,
       explorationPosition: museumLayout.explorationEyePosition,
@@ -99,8 +107,15 @@ export class VisualDiscriminationScene {
     this.evaluationEyePosition = museumLayout.evaluationEyePosition.clone();
     this.evaluationLookAt = museumLayout.evaluationLookAt.clone();
     this.cameraManager.enterExplorationMode();
+    configureSceneAntialiasing(scene);
     this.showExplorationPanel();
     this.scene = scene;
+    this.guide = new VirtualGuideManager(scene, {
+      theme: 'museum', quality: getExplorationQuality(),
+      beforeOpen: () => { this.cameraManager?.disablePointerLock(); this.audioManager?.stopAmbientAudio(); },
+      onClose: () => {}, onMenu: this.onReturnToMenu,
+      onComplete: () => { this.startMuseumAudio(); void this.beginEvaluationFlow(); }
+    });
 
     this.startVisualDiscriminationActivity = () => {
       const distractorManager = new VisualDiscriminationDistractorManager(scene, {
@@ -137,6 +152,8 @@ export class VisualDiscriminationScene {
   }
 
   dispose(): void {
+    this.guide?.dispose(); this.guide = null;
+    this.explorationVisuals?.dispose(); this.explorationVisuals = null;
     this.removeExplorationPanel();
     this.controller?.dispose();
     this.museumCharacterManager?.dispose();
@@ -162,10 +179,12 @@ export class VisualDiscriminationScene {
     light: DirectionalLight,
     shadowCasters: Mesh[]
   ): ShadowGenerator {
-    const shadowGenerator = new ShadowGenerator(512, light);
+    const shadowGenerator = new ShadowGenerator(1024, light);
 
-    shadowGenerator.useExponentialShadowMap = true;
-    shadowGenerator.blurKernel = 8;
+    shadowGenerator.useBlurExponentialShadowMap = true;
+    shadowGenerator.useKernelBlur = true;
+    shadowGenerator.blurScale = 2;
+    shadowGenerator.blurKernel = 16;
     shadowGenerator.bias = 0.0005;
     shadowGenerator.normalBias = 0.02;
     shadowGenerator.setDarkness(0.26);
@@ -177,7 +196,7 @@ export class VisualDiscriminationScene {
     const shadowMap = shadowGenerator.getShadowMap();
 
     if (shadowMap) {
-      shadowMap.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
+      shadowMap.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONEVERYTWOFRAMES;
     }
 
     return shadowGenerator;
@@ -208,109 +227,53 @@ export class VisualDiscriminationScene {
 
   private showExplorationPanel(): void {
     this.removeExplorationPanel();
-
-    const panel = document.createElement("section");
-    panel.id = "explorationPanel";
-    panel.setAttribute("aria-live", "polite");
-
-    const title = document.createElement("h1");
-    title.textContent = "Explora el museo";
-
-    const movement = document.createElement("p");
-    movement.textContent = "W/A/S/D para caminar. Activa vista juego para mirar con el mouse.";
-
-    const pointerLockStatus = document.createElement("p");
-    pointerLockStatus.className = "pointerLockStatus";
-
-    const pointerLockActions = document.createElement("div");
-    pointerLockActions.className = "explorationActions";
-
-    const activatePointerLockButton = document.createElement("button");
-    activatePointerLockButton.type = "button";
-    activatePointerLockButton.className = "secondaryButton";
-    activatePointerLockButton.textContent = "Activar vista juego";
-    activatePointerLockButton.addEventListener("click", () => {
-      this.startMuseumAudio();
-      this.cameraManager?.enablePointerLock();
+    this.explorationHud = new ExplorationHud({
+      theme: "museum",
+      onExplore: () => {
+        this.startMuseumAudio();
+        this.cameraManager?.enablePointerLock();
+      },
+      onRelease: () => this.cameraManager?.disablePointerLock(),
+      onStart: () => {
+        this.guide?.open();
+      },
+      onSound: () => this.toggleMuseumAudio(),
+      onMenu: this.onReturnToMenu,
+      onQuality: quality => {
+        saveExplorationQuality(quality); this.guide?.setQuality(quality);
+        if (this.scene && !this.evaluationStarted) {
+          this.explorationVisuals?.dispose();
+          this.explorationVisuals = new ExplorationVisuals(this.scene, 'museum', quality);
+        }
+      }
     });
-
-    const releasePointerLockButton = document.createElement("button");
-    releasePointerLockButton.type = "button";
-    releasePointerLockButton.className = "secondaryButton";
-    releasePointerLockButton.textContent = "Liberar mouse";
-    releasePointerLockButton.addEventListener("click", () => {
-      this.cameraManager?.disablePointerLock();
-    });
-
-    pointerLockActions.append(activatePointerLockButton, releasePointerLockButton);
-
-    const prompt = document.createElement("p");
-    prompt.textContent = "Cuando estes listo, comienza la actividad.";
-
-    const audioToggleButton = document.createElement("button");
-    audioToggleButton.type = "button";
-    audioToggleButton.className = "secondaryButton";
-    audioToggleButton.addEventListener("click", () => {
-      this.toggleMuseumAudio();
-    });
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = "Comenzar actividad";
-    button.addEventListener("click", () => {
-      this.startMuseumAudio();
-      void this.beginEvaluationFlow();
-    });
-
-    const menuButton = document.createElement("button");
-    menuButton.type = "button";
-    menuButton.className = "secondaryButton";
-    menuButton.textContent = "Volver al menu";
-    menuButton.addEventListener("click", () => {
-      this.onReturnToMenu();
-    });
-
-    panel.append(
-      title,
-      movement,
-      pointerLockStatus,
-      pointerLockActions,
-      prompt,
-      audioToggleButton,
-      button,
-      menuButton
-    );
-    document.body.appendChild(panel);
-
-    this.explorationPanel = panel;
-    this.startActivityButton = button;
-    this.activatePointerLockButton = activatePointerLockButton;
-    this.releasePointerLockButton = releasePointerLockButton;
-    this.audioToggleButton = audioToggleButton;
-    this.pointerLockStatus = pointerLockStatus;
     this.unsubscribePointerLock = this.cameraManager?.onPointerLockChange((locked) => {
       this.updatePointerLockUi(locked);
     }) ?? null;
     this.canvas.addEventListener("pointerdown", this.handleExplorationPointerDownBound);
     document.addEventListener("keydown", this.handleExplorationKeyDownBound);
-    this.updatePointerLockUi(this.cameraManager?.isPointerLocked() ?? false);
     this.updateAudioToggleUi();
   }
 
   private async beginEvaluationFlow(): Promise<void> {
     const cameraManager = this.cameraManager;
+    const scene = this.scene;
 
-    if (this.evaluationStarted || !cameraManager) {
+    if (this.evaluationStarted || !cameraManager || !scene) {
       return;
     }
 
     this.evaluationStarted = true;
+    this.guide?.dispose(); this.guide = null;
+    this.explorationVisuals?.dispose(); this.explorationVisuals = null;
     this.setExplorationPanelBusy();
     cameraManager.disablePointerLock();
     this.hideEvaluationObstructions();
     await this.charactersReadyPromise;
+    if (this.scene !== scene || scene.isDisposed) return;
     this.museumCharacterManager?.setMode("evaluation");
     await cameraManager.enterEvaluationMode();
+    if (this.scene !== scene || scene.isDisposed) return;
     this.validateEvaluationSightline();
     this.removeExplorationPanel();
     this.startVisualDiscriminationActivity();
@@ -383,24 +346,7 @@ export class VisualDiscriminationScene {
   }
 
   private setExplorationPanelBusy(): void {
-    if (!this.startActivityButton) {
-      return;
-    }
-
-    this.startActivityButton.disabled = true;
-    this.startActivityButton.textContent = "Preparando actividad...";
-
-    if (this.activatePointerLockButton) {
-      this.activatePointerLockButton.disabled = true;
-    }
-
-    if (this.releasePointerLockButton) {
-      this.releasePointerLockButton.disabled = true;
-    }
-
-    if (this.audioToggleButton) {
-      this.audioToggleButton.disabled = true;
-    }
+    this.explorationHud?.setBusy();
   }
 
   private removeExplorationPanel(): void {
@@ -411,13 +357,8 @@ export class VisualDiscriminationScene {
       this.handleExplorationPointerDownBound
     );
     document.removeEventListener("keydown", this.handleExplorationKeyDownBound);
-    this.explorationPanel?.remove();
-    this.explorationPanel = null;
-    this.startActivityButton = null;
-    this.activatePointerLockButton = null;
-    this.releasePointerLockButton = null;
-    this.audioToggleButton = null;
-    this.pointerLockStatus = null;
+    this.explorationHud?.dispose();
+    this.explorationHud = null;
   }
 
   private handleExplorationKeyDown(event: KeyboardEvent): void {
@@ -436,26 +377,11 @@ export class VisualDiscriminationScene {
   }
 
   private updatePointerLockUi(locked: boolean): void {
-    if (this.pointerLockStatus) {
-      this.pointerLockStatus.textContent = locked
-        ? "Vista juego activa. Mueve el mouse para observar. Esc o Q libera el mouse."
-        : "Mouse libre. Haz clic en el museo o usa el boton para activar vista juego.";
-    }
-
-    if (this.activatePointerLockButton) {
-      this.activatePointerLockButton.disabled = locked || this.evaluationStarted;
-      this.activatePointerLockButton.textContent = locked
-        ? "Vista juego activa"
-        : "Activar vista juego";
-    }
-
-    if (this.releasePointerLockButton) {
-      this.releasePointerLockButton.disabled = !locked || this.evaluationStarted;
-      this.releasePointerLockButton.textContent = locked ? "Liberar mouse (Q)" : "Mouse libre";
-    }
+    this.explorationHud?.setPointerLocked(locked);
   }
 
   private startMuseumAudio(): void {
+    if (this.guide?.isOpen) return;
     if (!this.museumAudioEnabled) {
       return;
     }
@@ -467,6 +393,7 @@ export class VisualDiscriminationScene {
 
   private toggleMuseumAudio(): void {
     this.museumAudioEnabled = !this.museumAudioEnabled;
+    saveExplorationSoundEnabled(this.museumAudioEnabled);
     this.audioManager?.setEnabled(this.museumAudioEnabled);
 
     if (this.museumAudioEnabled) {
@@ -477,12 +404,6 @@ export class VisualDiscriminationScene {
   }
 
   private updateAudioToggleUi(): void {
-    if (!this.audioToggleButton) {
-      return;
-    }
-
-    this.audioToggleButton.textContent = this.museumAudioEnabled
-      ? "Audio: ON"
-      : "Audio: OFF";
+    this.explorationHud?.setSoundEnabled(this.museumAudioEnabled);
   }
 }

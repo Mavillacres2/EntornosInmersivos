@@ -1,0 +1,120 @@
+{
+  "scope": "Renderer only; no MediaPipe or physical cameras",
+  "renderer": {
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001681) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  },
+  "phases": [
+    {
+      "phase": "classroom/exploration",
+      "samples": 18,
+      "inconclusive": true,
+      "estimatedFps": 1.48,
+      "frameMedianMs": 1001.1,
+      "frameP95Ms": 1016,
+      "renderSubmitMedianMs": 12.5,
+      "drawCallsMedian": 355,
+      "activeTrianglesMedian": 609618
+    },
+    {
+      "phase": "classroom/guide",
+      "samples": 31,
+      "inconclusive": true,
+      "estimatedFps": 3.17,
+      "frameMedianMs": 33.7,
+      "frameP95Ms": 1002.8,
+      "renderSubmitMedianMs": 6.6,
+      "drawCallsMedian": 152,
+      "activeTrianglesMedian": 623554
+    },
+    {
+      "phase": "classroom/instructions",
+      "samples": 45,
+      "inconclusive": true,
+      "estimatedFps": 1,
+      "frameMedianMs": 1001.5,
+      "frameP95Ms": 1002.4,
+      "renderSubmitMedianMs": 5.4,
+      "drawCallsMedian": 185,
+      "activeTrianglesMedian": 1031195
+    },
+    {
+      "phase": "classroom/practice",
+      "samples": 23,
+      "inconclusive": true,
+      "estimatedFps": 1.42,
+      "frameMedianMs": 1001.1,
+      "frameP95Ms": 1002.4,
+      "renderSubmitMedianMs": 5,
+      "drawCallsMedian": 185,
+      "activeTrianglesMedian": 1035817
+    },
+    {
+      "phase": "museum/exploration",
+      "samples": 30,
+      "inconclusive": true,
+      "estimatedFps": 1.5,
+      "frameMedianMs": 1001.4,
+      "frameP95Ms": 1002.6,
+      "renderSubmitMedianMs": 11.6,
+      "drawCallsMedian": 257,
+      "activeTrianglesMedian": 1357830
+    },
+    {
+      "phase": "museum/guide",
+      "samples": 85,
+      "inconclusive": false,
+      "estimatedFps": 3.2,
+      "frameMedianMs": 33.4,
+      "frameP95Ms": 1002.5,
+      "renderSubmitMedianMs": 8.7,
+      "drawCallsMedian": 301,
+      "activeTrianglesMedian": 1371406
+    },
+    {
+      "phase": "museum/instructions",
+      "samples": 140,
+      "inconclusive": false,
+      "estimatedFps": 3.33,
+      "frameMedianMs": 49.9,
+      "frameP95Ms": 1001.7,
+      "renderSubmitMedianMs": 2.4,
+      "drawCallsMedian": 146,
+      "activeTrianglesMedian": 110246
+    },
+    {
+      "phase": "museum/practice",
+      "samples": 155,
+      "inconclusive": false,
+      "estimatedFps": 5.12,
+      "frameMedianMs": 33.5,
+      "frameP95Ms": 1001.7,
+      "renderSubmitMedianMs": 2.7,
+      "drawCallsMedian": 146,
+      "activeTrianglesMedian": 110246
+    },
+    {
+      "phase": "museum/countdown",
+      "samples": 79,
+      "inconclusive": false,
+      "estimatedFps": 28.17,
+      "frameMedianMs": 33.4,
+      "frameP95Ms": 50.3,
+      "renderSubmitMedianMs": 2.7,
+      "drawCallsMedian": 146,
+      "activeTrianglesMedian": 110246
+    },
+    {
+      "phase": "museum/running-block",
+      "samples": 475,
+      "inconclusive": false,
+      "estimatedFps": 27.34,
+      "frameMedianMs": 33.4,
+      "frameP95Ms": 50,
+      "renderSubmitMedianMs": 2.5,
+      "drawCallsMedian": 146,
+      "activeTrianglesMedian": 110246
+    }
+  ]
+}

@@ -119,7 +119,8 @@ export class SpecialistResultsView {
 
   private renderDetail(session: SessionDetail, timeline: TimelineResponse, root: HTMLElement): HTMLElement {
     const detail = document.createElement("article");
-    const summary = session.summary ?? {};
+    const storedSummary=session.summary ?? {};
+    const summary = (storedSummary.evaluationOnly ?? storedSummary) as Record<string,unknown>;
     detail.className = "resultsDashboard";
     detail.innerHTML = `
       <header class="resultsHeader"><div><button class="backToSessions" type="button">${specialistIcon("arrow-left")} Volver al listado</button><p class="specialistEyebrow">Participante ${escapeHtml(session.participantCode)}</p><h2>Resultados de la evaluación</h2><p>${formatDate(session.startedAt)} · ${session.status === "finished" ? "Sesión finalizada" : "Sesión en curso"}</p></div><div class="exportActions"><button type="button" data-export="csv">${specialistIcon("download")} CSV</button><button type="button" data-export="json">${specialistIcon("download")} JSON</button></div></header>
@@ -130,13 +131,25 @@ export class SpecialistResultsView {
         ${metric("Actividad motora global", summary.globalMotorActivityMean, "promedio")}
         ${metric("Respuesta a distractores", summary.distractorResponseCount, "respuestas")}
         ${metric("Latencia ante distractores", summary.meanDistractorOrientationLatencyMs, "ms")}
+        ${metric("Movimiento de cabeza", summary.headMovementMean, "promedio derivado")}
+        ${metric("Variabilidad de cabeza", summary.headMovementVariability, "indicador derivado")}
       </section>
       <section class="resultsBand"><div class="sectionHeader"><div><p class="specialistEyebrow">Rendimiento</p><h3>Resultados cognitivos</h3></div></div><div class="activityResults"></div></section>
       <section class="resultsBand"><div class="sectionHeader"><div><p class="specialistEyebrow">Comportamiento</p><h3>Línea temporal</h3></div><div class="chartLegend"><span data-series="head">Cabeza</span><span data-series="trunk">Tronco</span><span data-series="motor">Actividad motora</span><span data-series="event">Distractor</span></div></div><div class="timelineChart"></div></section>
       <section class="resultsBand"><div class="sectionHeader"><div><p class="specialistEyebrow">Comparación</p><h3>Análisis por bloque</h3></div></div><div class="blockTable"></div></section>`;
     detail.querySelector(".backToSessions")?.addEventListener("click", () => void this.loadList(root));
     this.renderActivityResults(detail.querySelector(".activityResults")!, session.activityResults ?? []);
+    const scope=document.createElement('p');scope.className='indicatorScope';scope.textContent='Indicadores derivados de las muestras medidas durante evaluación. Se excluyen menú, bienvenida, práctica e intentos interrumpidos cuando existen sus marcas. «—» significa no disponible; no es un cero. Estos registros no constituyen un diagnóstico de TDAH.';detail.querySelector('.metricGrid')!.before(scope);
+    const integrity=storedSummary.integrity as Record<string,unknown>|undefined;
+    if(integrity){const notice=document.createElement('p');notice.className='integrityNotice';notice.textContent=`Integridad de registros: ${formatNumber(integrity.capturedSamples)} muestras capturadas; ${formatNumber(integrity.evaluationSamples)} en evaluación; ${formatNumber(integrity.interruptedAttempts)} intentos interrumpidos. Cámara superior disponible en ${formatNumber(integrity.upperCameraAvailableSamples)} muestras; cuerpo completo en ${formatNumber(integrity.fullBodyAvailableSamples)}. Los datos ausentes requieren revisión.`;detail.querySelector('.metricGrid')!.after(notice);}
+    if(integrity&&Number(integrity.excludedBoundaryEvents)>0){const excluded=document.createElement('p');excluded.className='integrityNotice';excluded.textContent=`${formatNumber(integrity.excludedBoundaryEvents)} eventos de episodios incompletos fueron excluidos del resumen de evaluación. Revise la línea temporal y el JSON completo.`;detail.append(excluded);}
+    const interruptions=Array.isArray(storedSummary.interruptions)?storedSummary.interruptions as Array<Record<string,unknown>>:[];
+    if(interruptions.length){const list=document.createElement('section');list.className='interruptionList';const title=document.createElement('h3');title.textContent='Intentos interrumpidos';list.append(title);for(const item of interruptions){const row=document.createElement('p');row.textContent=`${scenarioLabel(String(item.scenarioId))} · ${formatDuration(Number(item.elapsedMs))} desde inicio de sesión · ${String(item.activityState??'fase no disponible')} · intento ${String(item.attemptId??'sin identificador')}`;list.append(row);}detail.append(list);}
     detail.querySelector(".timelineChart")?.appendChild(renderTimeline(timeline));
+    const timelineScope=document.createElement('p');timelineScope.className='indicatorScope';timelineScope.textContent='La línea temporal y su CSV muestran la captura completa, incluidas práctica e interrupciones; conserve la fase y el identificador de intento al interpretarlos.';detail.querySelector('.timelineChart')!.before(timelineScope);
+    const eventList=document.createElement('section');eventList.className='interruptionList';const eventTitle=document.createElement('h3');eventTitle.textContent='Eventos registrados por actividad';eventList.append(eventTitle);
+    for(const event of timeline.events.slice(0,100)){const row=document.createElement('p');row.textContent=`${formatDuration(event.elapsedMs)} · ${event.scenarioId?scenarioLabel(event.scenarioId):'Entre actividades'} · ${event.type}`;eventList.append(row);}
+    if(!timeline.events.length){const missing=document.createElement('p');missing.textContent='No hay eventos registrados disponibles.';eventList.append(missing);}detail.append(eventList);
     this.renderBlocks(detail.querySelector(".blockTable")!, summary.byBlock);
     detail.querySelector('[data-export="json"]')?.addEventListener("click", () => downloadJson(session, timeline));
     detail.querySelector('[data-export="csv"]')?.addEventListener("click", () => downloadCsv(session, timeline));
@@ -148,7 +161,9 @@ export class SpecialistResultsView {
     results.forEach((item) => {
       const card = document.createElement("article");
       card.className = "activityResultCard";
-      const entries = flattenNumericValues(item.result).slice(0, 8);
+      const values=(item.activityId==='visual-discrimination'?item.result.global:item.result) as Record<string,unknown>|undefined;
+      const selected=[['Tiempo de reacción medio (ms)','averageReactionTimeMs','meanRtMs'],['Variabilidad del tiempo de reacción (ms)','reactionTimeStdDevMs','sdRtMs'],['Omisiones','omissions','omissions'],['Errores de comisión','commissionErrors','__notAvailable'],['Respuestas correctas','totalCorrectResponses','hits'],['Ensayos','totalTrials','totalTrials']];
+      const entries=selected.map(([label,key,alternative])=>[label!,values?.[key!]??values?.[alternative!]] as const);
       card.innerHTML = `<div><span>${escapeHtml(scenarioLabel(item.scenarioId))}</span><h4>${escapeHtml(activityLabel(item.activityId))}</h4></div><dl>${entries.map(([key, value]) => `<div><dt>${escapeHtml(humanize(key))}</dt><dd>${formatNumber(value)}</dd></div>`).join("")}</dl>`;
       container.appendChild(card);
     });
@@ -171,9 +186,10 @@ function renderTimeline(timeline: TimelineResponse): HTMLElement {
   const maxValue = Math.max(...values, 0.01);
   const x = (time: number) => left + (time / maxTime) * (width - left - right);
   const y = (value: number) => height - bottom - (value / maxValue) * (height - top - bottom);
-  const path = (getter: (sample: TimelineResponse["samples"][number]) => number | null | undefined) => timeline.samples.map((sample, index) => {
-    const value = getter(sample); return isNumber(value) ? `${index === 0 ? "M" : "L"}${x(sample.elapsedMs).toFixed(1)},${y(value).toFixed(1)}` : "";
-  }).join(" ");
+  const path = (getter: (sample: TimelineResponse["samples"][number]) => number | null | undefined) => {
+    let connected=false;
+    return timeline.samples.map(sample=>{const value=getter(sample);if(!isNumber(value)){connected=false;return '';}const command=connected?'L':'M';connected=true;return `${command}${x(sample.elapsedMs).toFixed(1)},${y(value).toFixed(1)}`;}).join(' ');
+  };
   const distractors = timeline.events.filter((event) => event.type === "DISTRACTOR_STARTED");
   wrapper.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Evolución temporal de indicadores conductuales"><g class="chartGrid"><line x1="${left}" y1="${top}" x2="${left}" y2="${height-bottom}"/><line x1="${left}" y1="${height-bottom}" x2="${width-right}" y2="${height-bottom}"/></g>${distractors.map((event) => `<line class="eventMarker" x1="${x(event.elapsedMs)}" y1="${top}" x2="${x(event.elapsedMs)}" y2="${height-bottom}"><title>${eventLabel(event)}</title></line>`).join("")}<path class="seriesHead" d="${path((sample) => sample.upperCamera?.head?.movementMagnitude)}"/><path class="seriesTrunk" d="${path((sample) => sample.upperCamera?.trunk?.movementMagnitude)}"/><path class="seriesMotor" d="${path((sample) => sample.fullBodyCamera?.globalMotorActivity)}"/><text x="${left}" y="${height-12}">0:00</text><text x="${width-right}" y="${height-12}" text-anchor="end">${formatDuration(maxTime)}</text><text x="8" y="${top+5}">${maxValue.toFixed(2)}</text><text x="8" y="${height-bottom}">0</text></svg><div class="eventList"><strong>Distractores (${distractors.length})</strong>${distractors.slice(0, 12).map((event) => `<span>${formatDuration(event.elapsedMs)} · ${escapeHtml(String(event.details?.distractorType ?? event.scenarioId ?? "Distractor"))}</span>`).join("")}</div>`;
   return wrapper;
@@ -189,8 +205,7 @@ function humanize(value: string): string { return value.replace(/([A-Z])/g, " $1
 function scenarioLabel(value: string): string { return ({ classroom: "Aula escolar", "space-station": "Estación espacial", "interactive-museum": "Museo interactivo" } as Record<string, string>)[value] ?? value; }
 function activityLabel(value: string): string { return ({ "go-no-go": "Go / No-Go", cpt: "CPT", "visual-discrimination": "Discriminación visual" } as Record<string, string>)[value] ?? value; }
 function eventLabel(event: TimelineEvent): string { return `${formatDuration(event.elapsedMs)} · ${event.type}`; }
-function flattenNumericValues(value: Record<string, unknown>, prefix = ""): Array<[string, number]> { return Object.entries(value).flatMap(([key, child]) => isNumber(child) ? [[prefix ? `${prefix}.${key}` : key, child] as [string, number]] : child && typeof child === "object" && !Array.isArray(child) ? flattenNumericValues(child as Record<string, unknown>, prefix ? `${prefix}.${key}` : key) : []); }
 function downloadJson(session: SessionDetail, timeline: TimelineResponse): void { download(`evaluacion-${session.participantCode}-${session.sessionId}.json`, JSON.stringify({ session, timeline }, null, 2), "application/json"); }
-function downloadCsv(session: SessionDetail, timeline: TimelineResponse): void { const rows = [["participantCode","sessionId","elapsedMs","scenarioId","blockNumber","headMovement","orientationDeviation","trunkMovement","globalMotorActivity"], ...timeline.samples.map((sample) => [session.participantCode, session.sessionId, sample.elapsedMs, sample.scenarioId ?? "", sample.blockNumber ?? "", sample.upperCamera?.head?.movementMagnitude ?? "", sample.upperCamera?.head?.orientationDeviation ?? "", sample.upperCamera?.trunk?.movementMagnitude ?? "", sample.fullBodyCamera?.globalMotorActivity ?? ""])]; download(`evaluacion-${session.participantCode}-${session.sessionId}.csv`, rows.map((row) => row.map(csvCell).join(",")).join("\n"), "text/csv;charset=utf-8"); }
+function downloadCsv(session: SessionDetail, timeline: TimelineResponse): void { const rows = [["participantCode","sessionId","elapsedMs","scenarioId","attemptId","activityState","blockNumber","headMovement","orientationDeviation","trunkMovement","globalMotorActivity"], ...timeline.samples.map((sample) => [session.participantCode, session.sessionId, sample.elapsedMs, sample.scenarioId ?? "", sample.attemptId??"",sample.activityState??"",sample.blockNumber ?? "", sample.upperCamera?.head?.movementMagnitude ?? "", sample.upperCamera?.head?.orientationDeviation ?? "", sample.upperCamera?.trunk?.movementMagnitude ?? "", sample.fullBodyCamera?.globalMotorActivity ?? ""])]; download(`evaluacion-${session.participantCode}-${session.sessionId}.csv`, rows.map((row) => row.map(csvCell).join(",")).join("\n"), "text/csv;charset=utf-8"); }
 function csvCell(value: unknown): string { return `"${String(value).replace(/"/g, '""')}"`; }
 function download(filename: string, content: string, type: string): void { const url = URL.createObjectURL(new Blob([content], { type })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url); }

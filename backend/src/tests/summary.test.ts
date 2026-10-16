@@ -34,6 +34,26 @@ test("session summary aggregates movement, orientation and distractor response",
   assert.equal((summary.byBlock as unknown[]).length, 1);
 });
 
+test('evaluation scope excludes welcome, practice and all samples from interrupted attempts',()=>{
+  const attempt='00000000-0000-4000-8000-000000000099';
+  const interrupted={...createSample('01',100,50,false),attemptId:attempt};
+  const practice={...createSample('02',200,20,false),activityState:'practice'};
+  const evaluated=createSample('03',300,2,true);
+  const event={...createEvent('04',400,'RETURN_TO_TASK'),type:'ACTIVITY_INTERRUPTED' as const,attemptId:attempt,details:{reason:'exit-requested',activityState:'running-block'}};
+  const summary=buildSessionSummary(sessionId,[interrupted,practice,evaluated],[event]);
+  assert.equal(summary.sampleCount,3);assert.equal(summary.evaluationOnly.sampleCount,1);assert.equal(summary.evaluationOnly.headMovementMean,2);assert.equal(summary.integrity.interruptedAttempts,1);assert.equal(summary.integrity.excludedInterruptedSamples,1);
+});
+
+test('scoped episode durations never borrow a start from practice or another block',()=>{
+  const start={...createEvent('01',100,'OFF_TASK_ORIENTATION_START'),activityState:'practice'};
+  const end={...createEvent('02',620,'OFF_TASK_ORIENTATION_END',{durationMs:520}),activityState:'running-block'};
+  const returned={...createEvent('03',620,'RETURN_TO_TASK',{latencyMs:520}),activityState:'running-block'};
+  const unclosed={...createEvent('04',700,'OFF_TASK_ORIENTATION_START'),activityState:'running-block'};
+  const summary=buildSessionSummary(sessionId,[createSample('05',900,1,true)],[start,end,returned,unclosed]);
+  assert.equal(summary.evaluationOnly.offTaskTotalTimeMs,0);assert.equal(summary.evaluationOnly.meanReturnToTaskLatencyMs,null);assert.equal(summary.integrity.excludedBoundaryEvents,3);
+  assert.equal(summary.offTaskTotalTimeMs,720);
+});
+
 function createSample(
   suffix: string,
   elapsedMs: number,
