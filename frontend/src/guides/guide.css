@@ -1,0 +1,51 @@
+.guideOverlay { --guide-accent:#287969; --guide-soft:#e4f2e9; position:fixed; inset:0; z-index:20; color:#243e40; font-family:'Trebuchet MS','Segoe UI',sans-serif; background:linear-gradient(90deg,#142c3380 0%,#142c3320 56%,#142c3300 100%); }
+.guideOverlay[data-theme=space] { --guide-accent:#4168ad; --guide-soft:#eaf0fb; }
+.guideOverlay[data-theme=museum] { --guide-accent:#8056a4; --guide-soft:#f0eaf7; }
+.guideOverlay * { box-sizing:border-box; }
+.guideOverlay button { display:inline-flex; justify-content:center; align-items:center; gap:8px; min-height:48px; border:1px solid #dbe4dc; border-radius:15px; padding:11px 15px; color:#29433f; background:#fffdf6; font-size:14px; line-height:1.3; font-weight:700; font-family:inherit; cursor:pointer; }
+.guideOverlay button:hover:not(:disabled) { background:var(--guide-soft); }
+.guideOverlay button:focus-visible,.guideOverlay input:focus-visible { outline:3px solid var(--guide-accent); outline-offset:4px; }
+.guideOverlay button:disabled { cursor:wait; opacity:.5; }
+.guideOverlay svg { width:22px; height:22px; flex-shrink:0; }
+.guideTop { display:flex; justify-content:space-between; align-items:center; padding:22px; gap:15px; }
+.guideBrand { display:flex; align-items:center; gap:10px; padding:13px 18px; border-radius:18px; background:#fffdf5; font-size:11px; letter-spacing:1.4px; font-weight:800; }
+.guideBrand svg { color:var(--guide-accent); }
+.guideCard { position:absolute; top:50%; left:clamp(22px,4vw,64px); transform:translateY(-45%); width:min(45vw,540px); max-height:calc(100dvh - 125px); overflow-y:auto; padding:clamp(22px,3vw,36px); border:1px solid #fff; border-radius:32px; background:#fffdf5; box-shadow:0 16px 60px #122c3340; scrollbar-width:thin; }
+.guideProgress { display:flex; align-items:center; gap:6px; margin-bottom:20px; }
+.guideProgress>span { width:28px; height:6px; background:#dce5df; border-radius:8px; }
+.guideProgress>span.is-current { background:var(--guide-accent); }
+.guideProgress small { margin-left:auto; color:#62746d; font-size:12px; }
+.guideCard h1 { margin:0 0 14px; font-size:clamp(25px,2.6vw,36px); line-height:1.12; letter-spacing:-.8px; text-wrap:balance; }
+.guideTranscript { font-size:17px; line-height:1.6; color:#4a615b; margin:0 0 18px; }
+.guideDemo { display:flex; flex-wrap:wrap; gap:10px; margin:18px 0; }
+.guideDemo[hidden] { display:none; }
+.guideDemo>span { flex:1; min-width:120px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:center; background:var(--guide-soft); border-radius:16px; padding:15px 12px; font-size:14px; text-align:center; }
+.guideDemo b { font-size:11px; letter-spacing:.7px; }
+.guideGreen,.guideRed { display:inline-block; height:25px; width:25px; border-radius:50%; box-shadow:inset 0 2px 3px #fff6; }
+.guideGreen { background:#39a869; }.guideRed { background:#df5e55; }
+.guideTarget { font:700 32px/1 'Trebuchet MS',sans-serif; font-style:normal; color:var(--guide-accent); }
+.guidePlaybackStatus { min-height:36px; margin:15px 0 8px; font-size:13px; line-height:1.5; color:#526c64; }
+.guideAudioControls { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:20px; }
+.guideAudioControls button { font-size:12px; padding:10px; background:var(--guide-soft); border-color:transparent; }
+.guideAudioControls label { display:flex; align-items:center; gap:8px; font-size:12px; color:#526c64; }
+.guideAudioControls input { width:95px; height:40px; accent-color:var(--guide-accent); }
+.guideOverlay .guideNext { width:100%; justify-content:space-between; min-height:54px; background:var(--guide-accent); color:white; border:0; box-shadow:0 4px 0 color-mix(in srgb,var(--guide-accent),#000 20%); font-size:16px; }
+.guideOverlay .guideNext:hover:not(:disabled) { background:color-mix(in srgb,var(--guide-accent),#000 12%); }
+.guideSecondary { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:15px; }
+.guideSecondary button { border:0; padding:6px 0; font-size:12px; text-decoration:underline; background:transparent; }
+.guidePortraitLabel { position:absolute; top:80%; left:62%; width:26%; display:flex; flex-direction:column; align-items:center; gap:5px; color:#fffdf5; font-size:14px; text-align:center; text-shadow:0 2px 8px #16323e; }
+.guideName { font-size:32px; font-weight:800; letter-spacing:-.6px; }
+.guideTalking { display:flex; align-items:center; justify-content:center; gap:4px; height:24px; padding:0 12px; border-radius:20px; background:#fffdf5e6; margin-top:4px; }
+.guideTalking i { width:4px; height:5px; background:var(--guide-accent); border-radius:5px; }
+.is-speaking .guideTalking i { animation:guideVoice 700ms ease-in-out infinite alternate; }.is-speaking .guideTalking i:nth-child(2n) { animation-delay:-300ms; }.is-speaking .guideTalking i:nth-child(3) { animation-delay:-500ms; }
+@keyframes guideVoice { to { height:17px; } }
+.guideCard { animation:guideCardIn 220ms ease-out both; }
+.guideOverlay button { transition:background 140ms ease,box-shadow 140ms ease,scale 140ms ease; }
+.guideOverlay button:active:not(:disabled) { scale:.985; }
+.guideOverlay .guideAudioControls button:hover { box-shadow:0 2px 0 color-mix(in srgb,var(--guide-accent),transparent 70%); }
+.is-loading-model .guidePortraitLabel::before { content:'';width:32px;height:32px;border:4px solid #ffffff65;border-top-color:#fffdf5;border-radius:50%;animation:guideLoading 1.1s linear infinite; }
+@keyframes guideCardIn { from { opacity:0;translate:0 12px; } to { opacity:1;translate:0 0; } }
+@keyframes guideLoading { to { rotate:360deg; } }
+@media(max-width:760px) { .guideTop{padding:12px}.guideBrand{font-size:9px;padding:9px 12px}.guideTop button{font-size:12px}.guideCard{left:12px;right:12px;top:auto;bottom:12px;transform:none;width:auto;max-height:55dvh;border-radius:25px;padding:22px}.guideCard h1{font-size:25px}.guideTranscript{font-size:15px}.guidePortraitLabel{top:35%;left:auto;right:18px;width:auto;font-size:11px;gap:2px}.guideName{font-size:23px}.guideTalking{display:none}.guideProgress{margin-bottom:12px} }
+@media(prefers-reduced-motion:reduce) { .is-speaking .guideTalking i { animation:none;height:10px; } }
+@media(prefers-reduced-motion:reduce) { .guideCard,.is-loading-model .guidePortraitLabel::before { animation:none; }.guideOverlay button{transition:none;} }

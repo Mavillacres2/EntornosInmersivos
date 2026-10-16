@@ -33,6 +33,9 @@ export class DataSyncManager {
   private readonly buffer: BehaviorDataBuffer;
   private readonly pendingActivityResults: ActivityResultEnvelope[] = [];
   private readonly completedScenarios = new Set<string>();
+  private resultFlushPromise: Promise<boolean> | null = null;
+  private readonly resultKeys = new Set<string>();
+  private readonly savedListeners = new Set<(result: ActivityResultEnvelope) => void>();
   private readonly distractorEndTimeouts = new Set<number>();
   private unsubscribeAdapter: (() => void) | null = null;
   private resultFlushIntervalId: number | null = null;
@@ -98,6 +101,7 @@ export class DataSyncManager {
     }
 
     const sample: BehaviorSample = {
+      ...(context.attemptId ? { attemptId: context.attemptId } : {}),
       sampleId: crypto.randomUUID(),
       sessionId: context.sessionId,
       elapsedMs: context.elapsedSessionTimeMs,
@@ -162,6 +166,8 @@ export class DataSyncManager {
     }
 
     this.buffer.pushEvent({
+      ...(context.attemptId ? { attemptId: context.attemptId } : {}),
+      activityState: context.activityState,
       eventId: crypto.randomUUID(),
       sessionId: context.sessionId,
       elapsedMs: elapsedMs ?? context.elapsedSessionTimeMs,
@@ -182,6 +188,11 @@ export class DataSyncManager {
 
   getCompletedScenarios(): string[] {
     return [...this.completedScenarios];
+  }
+
+  onResultSaved(listener: (result: ActivityResultEnvelope) => void): () => void {
+    this.savedListeners.add(listener);
+    return () => this.savedListeners.delete(listener);
   }
 
   async flushFinal(): Promise<boolean> {
@@ -214,8 +225,11 @@ export class DataSyncManager {
 
   private handleAdapterEvent(event: ActivityAdapterEvent): void {
     if (event.type === "activity-result") {
-      this.completedScenarios.add(event.scenarioId);
+      const key = `${event.scenarioId}/${event.attemptId ?? 'legacy'}`;
+      if (this.resultKeys.has(key)) return;
+      this.resultKeys.add(key);
       this.pendingActivityResults.push({
+        ...(event.attemptId ? { attemptId: event.attemptId } : {}),
         resultId: crypto.randomUUID(),
         scenarioId: event.scenarioId,
         activityId: event.activityId,
@@ -255,6 +269,13 @@ export class DataSyncManager {
   }
 
   private async flushActivityResults(): Promise<boolean> {
+    if (this.resultFlushPromise) return this.resultFlushPromise;
+    this.resultFlushPromise = this.performResultFlush();
+    try { return await this.resultFlushPromise; }
+    finally { this.resultFlushPromise = null; }
+  }
+
+  private async performResultFlush(): Promise<boolean> {
     if (this.pendingActivityResults.length === 0) {
       return true;
     }
@@ -275,6 +296,8 @@ export class DataSyncManager {
       try {
         await this.apiClient.sendActivityResult(sessionId, result);
         this.pendingActivityResults.shift();
+        this.completedScenarios.add(result.scenarioId);
+        this.savedListeners.forEach(listener => listener(result));
       } catch {
         return false;
       }

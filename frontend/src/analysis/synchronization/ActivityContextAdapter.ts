@@ -40,6 +40,7 @@ export type ActivityAdapterEvent =
       type: "activity-result";
       scenarioId: string;
       activityId: string;
+      attemptId?: string;
       result: Record<string, unknown>;
     };
 
@@ -51,6 +52,8 @@ export class ActivityContextAdapter {
   private scenarioId: string | null = null;
   private activityId: string | null = null;
   private activityState: string | null = null;
+  private attemptId: string | undefined;
+  private generation = 0;
   private blockNumber: number | null = null;
   private condition: string | null = null;
   private trialNumber: number | null = null;
@@ -71,7 +74,9 @@ export class ActivityContextAdapter {
     this.clearActivity();
   }
 
-  setScenario(scenarioId: string, activityId: string): void {
+  setScenario(scenarioId: string, activityId: string, attemptId?: string): void {
+    this.generation++;
+    this.attemptId = attemptId;
     this.scenarioId = scenarioId;
     this.activityId = activityId;
     this.activityState = "exploring";
@@ -85,6 +90,8 @@ export class ActivityContextAdapter {
   }
 
   clearActivity(): void {
+    this.generation++;
+    this.attemptId = undefined;
     this.scenarioId = null;
     this.activityId = null;
     this.activityState = null;
@@ -101,14 +108,16 @@ export class ActivityContextAdapter {
     scenarioId: string,
     activityId: string
   ): ActivityTelemetrySink {
+    const generation = this.generation;
+    const current = () => generation === this.generation && this.matchesActiveActivity(scenarioId, activityId);
     return {
       onStateChange: (state) => {
-        if (this.matchesActiveActivity(scenarioId, activityId)) {
+        if (current()) {
           this.activityState = state;
         }
       },
       onBlockStart: (block) => {
-        if (!this.matchesActiveActivity(scenarioId, activityId)) {
+        if (!current()) {
           return;
         }
 
@@ -120,7 +129,7 @@ export class ActivityContextAdapter {
         this.stimulusType = null;
       },
       onTrialStart: (trial) => {
-        if (!this.matchesActiveActivity(scenarioId, activityId)) {
+        if (!current()) {
           return;
         }
 
@@ -130,7 +139,7 @@ export class ActivityContextAdapter {
         this.stimulusType = trial.stimulusType;
       },
       onTrialEnd: () => {
-        if (!this.matchesActiveActivity(scenarioId, activityId)) {
+        if (!current()) {
           return;
         }
 
@@ -140,7 +149,7 @@ export class ActivityContextAdapter {
         this.stimulusType = null;
       },
       onDistractor: (event) => {
-        if (!this.matchesActiveActivity(scenarioId, activityId)) {
+        if (!current()) {
           return;
         }
 
@@ -162,7 +171,7 @@ export class ActivityContextAdapter {
         });
       },
       onActivityResult: (result) => {
-        if (!this.matchesActiveActivity(scenarioId, activityId)) {
+        if (!current()) {
           return;
         }
 
@@ -171,6 +180,7 @@ export class ActivityContextAdapter {
           type: "activity-result",
           scenarioId,
           activityId,
+          ...(this.attemptId ? { attemptId: this.attemptId } : {}),
           result
         });
       }
@@ -187,6 +197,7 @@ export class ActivityContextAdapter {
 
     return {
       sessionId: this.sessionId,
+      ...(this.attemptId ? { attemptId: this.attemptId } : {}),
       scenarioId: this.scenarioId,
       activityId: this.activityId,
       activityState: this.activityState,

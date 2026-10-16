@@ -29,6 +29,7 @@ export function createApp(
         callback(new ApiError(403, "Origen CORS no permitido"));
       },
       methods: ["GET", "POST"],
+      credentials: true,
       maxAge: 600
     })
   );

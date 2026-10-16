@@ -97,10 +97,10 @@ export class GoNoGoActivity {
     this.registerInputHandlers();
 
     this.renderPanel(`
-      <h1>Actividad de atencion</h1>
+      <h1>Mira y responde</h1>
 
       <p>
-        Primero haremos una practica corta.
+        Primero vamos a practicar.
       </p>
 
       <p>

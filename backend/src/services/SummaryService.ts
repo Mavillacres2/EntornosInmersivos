@@ -30,6 +30,36 @@ export function buildSessionSummary(
   samples: BehaviorSampleDto[],
   events: BehaviorEventDto[]
 ): Document {
+  const interrupted = events.filter(event=>event.type==='ACTIVITY_INTERRUPTED');
+  const invalidAttempts = new Set(interrupted.flatMap(event=>event.attemptId?[event.attemptId]:[]));
+  const evaluationSamples = samples.filter(sample=>sample.activityState==='running-block'&&(!sample.attemptId||!invalidAttempts.has(sample.attemptId)));
+  const candidates = events.filter(event=>event.scenarioId!==null&&(event.activityState===undefined||event.activityState==='running-block')&&(!event.attemptId||!invalidAttempts.has(event.attemptId)));
+  const evaluationEvents = completeOrientationEpisodes(candidates);
+  return {
+    ...buildScopedSummary(sessionId,samples,events),
+    evaluationOnly:buildScopedSummary(sessionId,evaluationSamples,evaluationEvents),
+    integrity:{capturedSamples:samples.length,evaluationSamples:evaluationSamples.length,interruptedAttempts:interrupted.length,excludedBoundaryEvents:candidates.length-evaluationEvents.length,excludedInterruptedSamples:samples.filter(sample=>sample.attemptId&&invalidAttempts.has(sample.attemptId)).length,upperCameraAvailableSamples:evaluationSamples.filter(sample=>sample.upperCamera.available).length,fullBodyAvailableSamples:evaluationSamples.filter(sample=>sample.fullBodyCamera.available).length},
+    interruptions:interrupted.map(event=>({scenarioId:event.scenarioId,attemptId:event.attemptId??null,elapsedMs:event.elapsedMs,occurredAt:event.occurredAt,activityState:event.details?.activityState??null,reason:event.details?.reason??null}))
+  };
+}
+
+/** Preserve original event values, but never join an episode across menu/practice/block boundaries. */
+function completeOrientationEpisodes(events:BehaviorEventDto[]):BehaviorEventDto[]{
+  const starts=new Map<string,BehaviorEventDto>(),returned=new Set<string>(),accepted:BehaviorEventDto[]=[];
+  for(const event of [...events].sort((a,b)=>a.elapsedMs-b.elapsedMs)){
+    const key=JSON.stringify([event.scenarioId,event.activityId,event.attemptId,event.blockNumber,event.condition]);
+    if(event.type==='OFF_TASK_ORIENTATION_START'){starts.set(key,event);returned.delete(key);continue;}
+    if(event.type==='OFF_TASK_ORIENTATION_END'){
+      const start=starts.get(key);starts.delete(key);returned.delete(key);
+      if(start){accepted.push(start,event);returned.add(key);}continue;
+    }
+    if(event.type==='RETURN_TO_TASK'){if(returned.delete(key))accepted.push(event);continue;}
+    accepted.push(event);
+  }
+  return accepted.sort((a,b)=>a.elapsedMs-b.elapsedMs);
+}
+
+function buildScopedSummary(sessionId:string,samples:BehaviorSampleDto[],events:BehaviorEventDto[]):Document {
   const groups = new Map<string, BehaviorSampleDto[]>();
 
   samples.forEach((sample) => {

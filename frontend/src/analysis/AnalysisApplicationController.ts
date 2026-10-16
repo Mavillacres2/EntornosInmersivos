@@ -104,12 +104,22 @@ export class AnalysisApplicationController {
     this.activityCompletedHandler = handler;
   }
 
-  setActiveScenario(scenarioId: string, activityId: string): ActivityTelemetrySink {
-    this.activityContext.setScenario(scenarioId, activityId);
+  setActiveScenario(scenarioId: string, activityId: string, attemptId?: string): ActivityTelemetrySink {
+    this.activityContext.setScenario(scenarioId, activityId, attemptId);
+    this.dataSyncManager.recordBehaviorEvent('ACTIVITY_STARTED');
     return this.activityContext.createTelemetrySink(scenarioId, activityId);
   }
 
   clearActiveScenario(): void {
+    this.activityContext.clearActivity();
+  }
+
+  getSessionId(): string | null { return this.sessionManager.getSession()?.sessionId ?? null; }
+  onResultSaved(listener: Parameters<DataSyncManager['onResultSaved']>[0]): () => void { return this.dataSyncManager.onResultSaved(listener); }
+  flushPending(): Promise<boolean> { return this.dataSyncManager.flushFinal(); }
+  interruptActivity(reason: string): void {
+    const context = this.activityContext.getContext();
+    this.dataSyncManager.recordBehaviorEvent('ACTIVITY_INTERRUPTED', { reason, activityState:context.activityState ?? 'exploring' });
     this.activityContext.clearActivity();
   }
 

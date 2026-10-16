@@ -1,0 +1,16 @@
+{
+  "fps": 3.5,
+  "renderSize": [
+    1280,
+    800
+  ],
+  "meshes": 362,
+  "guideMeshes": 0,
+  "artMeshes": 0,
+  "pbr": 0,
+  "events": [
+    "start: museum-ready",
+    "cancel: museum-ready",
+    "written-fallback: museum-ready"
+  ]
+}

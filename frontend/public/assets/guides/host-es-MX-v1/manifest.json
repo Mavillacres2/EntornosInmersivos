@@ -1,0 +1,38 @@
+﻿{
+    "version":  "host-es-MX-v1",
+    "voice":  "Microsoft Sabina Desktop",
+    "locale":  "es-MX",
+    "availableVoices":  [
+                            {
+                                "Name":  "Microsoft Sabina Desktop",
+                                "Culture":  "es-MX"
+                            },
+                            {
+                                "Name":  "Microsoft Zira Desktop",
+                                "Culture":  "en-US"
+                            }
+                        ],
+    "engine":  "Windows System.Speech",
+    "rate":  0,
+    "sentencePauseMs":  160,
+    "generatedAt":  "2026-10-16T06:15:21.1610291Z",
+    "sourceSHA256":  "11101aaa0e091817281766d9feb06a3533b768456f67a18b011c75d9e4ae0f3b",
+    "clips":  [
+                  {
+                      "id":  "host-welcome",
+                      "text":  "¡Hola! ¡Qué alegría verte por aquí! Hoy tenemos tres aventuras preparadas para ti. Vamos a visitar un aula, viajar al espacio y explorar un museo. Escucha con atención las instrucciones de cada juego y diviértete mucho. ¿Estás listo? ¡Vamos a comenzar!",
+                      "sha256":  "641b4d05edbb3af280a37ddf2df7b8052a8f1d64c8d4c67f6fb00c8ce7e666d8",
+                      "bytes":  672846,
+                      "visemeCount":  219,
+                      "wordCount":  41
+                  },
+                  {
+                      "id":  "host-farewell",
+                      "text":  "¡Qué alegría! ¡Ya terminamos nuestras tres aventuras! Muchas gracias por jugar conmigo. Me encantó acompañarte por el aula, el espacio y el museo. Ahora puedes descansar un poquito. ¡Hasta la próxima!",
+                      "sha256":  "9b28a1866cfd2adeaf8d3c0f16314a689d74ea933b7abc5e39837e11331532ed",
+                      "bytes":  553006,
+                      "visemeCount":  176,
+                      "wordCount":  31
+                  }
+              ]
+}

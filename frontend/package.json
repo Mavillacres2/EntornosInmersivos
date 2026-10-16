@@ -5,11 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "test": "vitest run src/analysis/tests",
+    "build": "node scripts/validate-guide-assets.mjs && node scripts/validate-guide-assets.mjs src/guides/host-narration.es.json && node scripts/validate-guide-models.mjs && tsc && vite build",
+    "test": "vitest run src/analysis/tests src/environment/tests src/guides/tests src/flow/tests",
+    "guides:envelopes": "node scripts/build-guide-envelopes.mjs",
+    "guides:check": "node scripts/validate-guide-assets.mjs",
+    "models:build": "node scripts/build-guide-models.mjs",
+    "models:check": "node scripts/validate-guide-models.mjs",
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/node": "^24.19.2",
     "typescript": "~6.0.2",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"

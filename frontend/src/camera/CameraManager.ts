@@ -1,5 +1,6 @@
 import {
   Animation,
+  Camera,
   CubicEase,
   EasingFunction,
   UniversalCamera,
@@ -38,6 +39,7 @@ interface CameraManagerOptions {
   evaluationFov?: number;
   evaluationYawLimit?: number;
   evaluationPitchLimit?: number;
+  onPointerLockError?: () => void;
 }
 
 export class CameraManager {
@@ -58,6 +60,8 @@ export class CameraManager {
   private readonly blurBound: () => void;
   private readonly pointerLockChangeBound: () => void;
   private readonly pointerLockErrorBound: () => void;
+  private readonly onPointerLockError: () => void;
+  private readonly resizeBound: () => void;
   private readonly pointerLockChangeCallbacks = new Set<(locked: boolean) => void>();
 
   private beforeRenderObserver: Observer<Scene> | null = null;
@@ -67,6 +71,7 @@ export class CameraManager {
 
   constructor(options: CameraManagerOptions) {
     this.scene = options.scene;
+    this.onPointerLockError = options.onPointerLockError ?? (() => {});
     this.canvas = options.canvas;
     this.bounds = options.bounds;
     this.explorationHeight = options.explorationPosition.y;
@@ -90,6 +95,14 @@ export class CameraManager {
       options.evaluationTarget,
       options.evaluationFov ?? DEFAULT_EVALUATION_FOV
     );
+    const baseFov = options.evaluationFov ?? DEFAULT_EVALUATION_FOV;
+    this.resizeBound = () => {
+      const aspect = Math.max(0.1, this.scene.getEngine().getAspectRatio(this.evaluationCamera));
+      // Keep the board legible while preventing cropping on narrow viewports.
+      this.evaluationCamera.fov = Math.max(baseFov, 2 * Math.atan(Math.tan(0.82 / 2) / aspect));
+    };
+    this.resizeBound();
+    window.addEventListener("resize", this.resizeBound);
     this.evaluationRotation = this.evaluationCamera.rotation.clone();
 
     this.focusCanvasBound = () => {
@@ -110,6 +123,7 @@ export class CameraManager {
     };
     this.pointerLockErrorBound = () => {
       this.notifyPointerLockChange();
+      this.onPointerLockError();
     };
     this.canvas.addEventListener("click", this.focusCanvasBound);
     document.addEventListener("keydown", this.keyDownBound);
@@ -146,12 +160,21 @@ export class CameraManager {
 
     this.canvas.focus();
 
-    const pointerLockRequest = this.canvas.requestPointerLock?.();
-
-    if (pointerLockRequest instanceof Promise) {
-      pointerLockRequest.catch(() => {
-        this.notifyPointerLockChange();
-      });
+    if (!this.canvas.requestPointerLock) {
+      this.onPointerLockError();
+      return;
+    }
+    try {
+      const pointerLockRequest = this.canvas.requestPointerLock();
+      if (pointerLockRequest instanceof Promise) {
+        pointerLockRequest.catch(() => {
+          this.notifyPointerLockChange();
+          this.onPointerLockError();
+        });
+      }
+    } catch {
+      this.notifyPointerLockChange();
+      this.onPointerLockError();
     }
   }
 
@@ -196,6 +219,7 @@ export class CameraManager {
   }
 
   dispose(): void {
+    window.removeEventListener("resize", this.resizeBound);
     this.disablePointerLock();
     this.removeExplorationClamp();
     this.removeEvaluationLookClamp();
@@ -219,7 +243,8 @@ export class CameraManager {
     );
 
     camera.setTarget(target);
-    camera.fov = 1.08;
+    camera.fovMode = Camera.FOVMODE_HORIZONTAL_FIXED;
+    camera.fov = 1.5;
     camera.minZ = 0.05;
     camera.maxZ = 80;
     camera.speed = 0;
@@ -341,6 +366,9 @@ export class CameraManager {
   }
 
   private handleMovementKeyDown(event: KeyboardEvent): void {
+    if (event.target instanceof Element && event.target.closest("#explorationHud")) {
+      return;
+    }
     if (!this.shouldUseMovementKey(event.code)) {
       return;
     }
@@ -421,6 +449,12 @@ export class CameraManager {
   }
 
   private async transitionToEvaluationCamera(): Promise<void> {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.evaluationCamera.position.copyFrom(this.evaluationPosition);
+      this.evaluationCamera.rotation.copyFrom(this.evaluationRotation);
+      this.scene.activeCamera = this.evaluationCamera;
+      return;
+    }
     const frameRate = 60;
     const totalFrames = 36;
 

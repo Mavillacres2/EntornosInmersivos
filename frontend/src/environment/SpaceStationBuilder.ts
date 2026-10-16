@@ -10,6 +10,8 @@ import {
   Vector3
 } from "@babylonjs/core";
 import type { Mesh, Scene } from "@babylonjs/core";
+import { createSoftBox } from "./ModernGeometry";
+import { createSurfaceMaterial } from "./SurfaceMaterials";
 
 import type { CameraBounds } from "../camera/CameraManager";
 
@@ -188,11 +190,11 @@ export class SpaceStationBuilder {
   }
 
   private createMaterials(): SpaceStationMaterials {
-    const wall = this.createMaterial("spaceWallMaterial", new Color3(0.36, 0.41, 0.44));
-    const floor = this.createMaterial("spaceFloorMaterial", new Color3(0.81, 0.83, 0.83));
-    const metal = this.createMaterial("spaceMetalMaterial", new Color3(0.46, 0.51, 0.53));
+    const wall = this.createMaterial("spaceWallMaterial", new Color3(0.39, 0.48, 0.57));
+    const floor = this.createMaterial("spaceFloorMaterial", new Color3(0.69, 0.76, 0.81));
+    const metal = this.createMaterial("spaceMetalMaterial", new Color3(0.55, 0.64, 0.7));
     const trim = this.createMaterial("spaceTrimMaterial", new Color3(0.24, 0.28, 0.3));
-    const console = this.createMaterial("spaceConsoleMaterial", new Color3(0.32, 0.39, 0.41));
+    const console = this.createMaterial("spaceConsoleMaterial", new Color3(0.21, 0.3, 0.39));
     const panel = this.createMaterial("spacePanelMaterial", new Color3(0.12, 0.18, 0.22));
     const screen = this.createMaterial("spaceScreenMaterial", new Color3(0.05, 0.2, 0.27));
     const screenRim = this.createMaterial("spaceScreenRimMaterial", new Color3(0.31, 0.76, 0.85));
@@ -204,7 +206,7 @@ export class SpaceStationBuilder {
     const accentBlue = this.createMaterial("spaceAccentBlueMaterial", new Color3(0.29, 0.5, 0.75));
     const accentCyan = this.createMaterial("spaceAccentCyanMaterial", new Color3(0.31, 0.76, 0.85));
     const accentGreen = this.createMaterial("spaceAccentGreenMaterial", new Color3(0.47, 0.66, 0.5));
-    const seat = this.createMaterial("spaceSeatMaterial", new Color3(0.35, 0.45, 0.54));
+    const seat = this.createMaterial("spaceSeatMaterial", new Color3(0.25, 0.42, 0.53));
     const windowGlow = this.createMaterial("spaceWindowGlowMaterial", new Color3(0.31, 0.76, 0.85));
     const planetAtmosphere = this.createMaterial("planetAtmosphereMaterial", new Color3(0.38, 0.78, 0.95));
     const posterPaper = this.createMaterial("spacePosterPaperMaterial", new Color3(0.88, 0.84, 0.68));
@@ -265,7 +267,8 @@ export class SpaceStationBuilder {
       this.scene
     );
 
-    ambientLight.intensity = 0.72;
+    ambientLight.intensity = 0.6;
+    ambientLight.diffuse = new Color3(0.84, 0.92, 1);
     ambientLight.groundColor = new Color3(0.28, 0.32, 0.36);
 
     const shadowLight = new DirectionalLight(
@@ -276,6 +279,7 @@ export class SpaceStationBuilder {
 
     shadowLight.position = new Vector3(-4.8, 5.4, -1.6);
     shadowLight.intensity = 0.58;
+    shadowLight.diffuse = new Color3(0.82, 0.9, 1);
 
     const consoleAccentLight = new PointLight(
       "spaceConsoleAccentLight",
@@ -417,25 +421,27 @@ export class SpaceStationBuilder {
   }
 
   private createFloorLines(): void {
+    const joint = this.createMaterial("spaceFloorJointMaterial", new Color3(0.55, 0.63, 0.7));
+    joint.specularColor = Color3.Black();
     [-6.4, -4.6, -2.8, -1, 0.8, 2.6, 4.4].forEach((zPosition, index) => {
       this.createBox({
         name: `spaceFloorCrossLine${index + 1}`,
         width: 11.35,
         height: 0.012,
-        depth: 0.035,
+        depth: 0.012,
         position: new Vector3(0, 0.014, zPosition),
-        material: this.materials.trim
+        material: joint
       });
     });
 
     [-4, -2, 0, 2, 4].forEach((xPosition, index) => {
       this.createBox({
         name: `spaceFloorLongLine${index + 1}`,
-        width: 0.035,
+        width: 0.012,
         height: 0.012,
         depth: 13.15,
         position: new Vector3(xPosition, 0.016, -0.7),
-        material: this.materials.trim
+        material: joint
       });
     });
 
@@ -1081,7 +1087,7 @@ export class SpaceStationBuilder {
       name,
       {
         diameter: 0.07,
-        segments: 12
+        segments: 24
       },
       this.scene
     );
@@ -1722,7 +1728,7 @@ export class SpaceStationBuilder {
       {
         height: 1.1 * scale,
         diameter: 0.24 * scale,
-        tessellation: 18
+        tessellation: 32
       },
       this.scene
     );
@@ -1781,7 +1787,7 @@ export class SpaceStationBuilder {
       {
         height: 0.64,
         diameter: 0.18,
-        tessellation: 20
+        tessellation: 32
       },
       this.scene
     );
@@ -1795,7 +1801,7 @@ export class SpaceStationBuilder {
       `${name}Sample`,
       {
         diameter: 0.14,
-        segments: 12
+        segments: 24
       },
       this.scene
     );
@@ -2432,7 +2438,7 @@ export class SpaceStationBuilder {
       {
         height: 0.34,
         diameter: 0.025,
-        tessellation: 8
+        tessellation: 32
       },
       this.scene
     );
@@ -2805,7 +2811,7 @@ export class SpaceStationBuilder {
       {
         height: 0.72,
         diameter: 0.025,
-        tessellation: 8
+        tessellation: 32
       },
       this.scene
     );
@@ -2840,7 +2846,7 @@ export class SpaceStationBuilder {
         `spaceSolarSystemMiniPlanet${index + 1}`,
         {
           diameter: planet.diameter,
-          segments: 12
+          segments: 24
         },
         this.scene
       );
@@ -2871,7 +2877,7 @@ export class SpaceStationBuilder {
       {
         height: 0.36,
         diameter: 0.035,
-        tessellation: 8
+        tessellation: 32
       },
       this.scene
     );
@@ -2886,7 +2892,7 @@ export class SpaceStationBuilder {
         `spacePlantLeaf${position.x}${index + 1}`,
         {
           diameter: 0.18,
-          segments: 10
+          segments: 24
         },
         this.scene
       );
@@ -2955,12 +2961,7 @@ export class SpaceStationBuilder {
   }
 
   private createMaterial(name: string, color: Color3): StandardMaterial {
-    const material = new StandardMaterial(name, this.scene);
-
-    material.diffuseColor = color;
-    material.specularColor = new Color3(0.1, 0.12, 0.12);
-
-    return material;
+    return createSurfaceMaterial(name, color, this.scene);
   }
 
   private requireNode(node: TransformNode | null, name: string): TransformNode {
@@ -2991,7 +2992,7 @@ export class SpaceStationBuilder {
   }
 
   private createBox(options: BoxOptions): Mesh {
-    const mesh = MeshBuilder.CreateBox(
+    const mesh = createSoftBox(
       options.name,
       {
         width: options.width,
@@ -3007,6 +3008,7 @@ export class SpaceStationBuilder {
     mesh.rotation.z = options.rotationZ ?? 0;
     mesh.material = options.material;
     mesh.isPickable = false;
+    mesh.receiveShadows = options.receivesShadow ?? !!options.castsShadow;
 
     if (options.dynamic) {
       mesh.metadata = {

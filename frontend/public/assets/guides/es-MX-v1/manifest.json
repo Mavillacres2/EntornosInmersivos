@@ -1,0 +1,82 @@
+﻿{
+    "version":  "es-MX-v1",
+    "voice":  "Microsoft Sabina Desktop",
+    "engine":  "Windows System.Speech",
+    "rate":  -1,
+    "generatedAt":  "2026-10-16T04:11:08.7828375Z",
+    "sourceSHA256":  "82cc6c8f71ef7848358058cff31f55fcf5d286d461010836671bd9d2952ceaf8",
+    "clips":  [
+                  {
+                      "id":  "classroom-welcome",
+                      "text":  "¡Hola! Soy Luma, tu guía del aula. Vamos a jugar con círculos de colores. Primero te explicaré las reglas y después podrás practicar.",
+                      "sha256":  "2b0006c9fcdf086688754f49292ab7f60c875b6459e43b852dd98be736e7eeb1",
+                      "bytes":  544654
+                  },
+                  {
+                      "id":  "classroom-rules",
+                      "text":  "Cuando aparezca un círculo verde, pulsa la barra espaciadora. Cuando aparezca un círculo rojo, espera sin responder.",
+                      "sha256":  "89468cd4a1670822b0404e19141b1ae850e894e77a0db1a03f84d3f2a0e34af6",
+                      "bytes":  428700
+                  },
+                  {
+                      "id":  "classroom-demo",
+                      "text":  "Mira la guía visual: verde significa pulsar espacio. Rojo significa esperar. Puedes escuchar otra vez antes de continuar.",
+                      "sha256":  "0da82048d22265cb6edffd6e013a0fbfd0277ee5083b5a6c5d4028820b830a24",
+                      "bytes":  479238
+                  },
+                  {
+                      "id":  "classroom-ready",
+                      "text":  "A continuación verás las instrucciones del juego. Primero practicarás. Yo me retiro para que puedas concentrarte. Cuando termines de escuchar, pulsa ir a las instrucciones.",
+                      "sha256":  "cd71eda13a9fec4f8380600e23f41cd34bbbd914505e366fd588d596d2bd2378",
+                      "bytes":  637978
+                  },
+                  {
+                      "id":  "space-welcome",
+                      "text":  "¡Hola! Soy Nova. Bienvenido a la estación espacial. Nuestra misión será buscar una letra. Primero aprenderemos las reglas y después practicarás.",
+                      "sha256":  "e371ed41f9dc5bc2c76bcb451243341abf2fb7d45ff762a8ff767b7cecb5224f",
+                      "bytes":  594942
+                  },
+                  {
+                      "id":  "space-rules",
+                      "text":  "Verás diferentes letras en la pantalla. Pulsa la barra espaciadora cuando aparezca la letra equis. Con otras letras, espera sin responder.",
+                      "sha256":  "4d2892cabbb0b01626f4b761335ff88004cc475c43b6520916385d66a323656e",
+                      "bytes":  502274
+                  },
+                  {
+                      "id":  "space-demo",
+                      "text":  "Esta es la letra que buscamos: equis. Cuando la veas en el juego, pulsa espacio. Si aparece otra letra, espera. Puedes escuchar otra vez.",
+                      "sha256":  "6f313c916fac377221c10249c26b86ed867ba6b68fc913eb68064589df4094fa",
+                      "bytes":  588180
+                  },
+                  {
+                      "id":  "space-ready",
+                      "text":  "Ahora verás las instrucciones del juego y podrás empezar la práctica. Yo me retiro durante la misión. Cuando termines de escuchar, pulsa ir a las instrucciones.",
+                      "sha256":  "f33421decaa6bdcfad18ada8bf23f0d5efa1d5837970aa0508b11da04c8c220a",
+                      "bytes":  563490
+                  },
+                  {
+                      "id":  "museum-welcome",
+                      "text":  "¡Hola! Soy Mica, tu guía del museo. Vamos a observar caras y descubrir sus diferencias. Primero conocerás la regla y después practicarás.",
+                      "sha256":  "0d0107fb97aeefb95ba07e92e4d8bc4e963238db15c59efbeeee4e5b56857765",
+                      "bytes":  564142
+                  },
+                  {
+                      "id":  "museum-rules",
+                      "text":  "Mira las tres caras. Dos son iguales y una es diferente. Apunta a la cara diferente y haz clic.",
+                      "sha256":  "03d86521e000c38a5cb3032a18721bfd7d2cf04b27a61cf7beac162afc4970fc",
+                      "bytes":  381492
+                  },
+                  {
+                      "id":  "museum-demo",
+                      "text":  "Compara las tres caras del juego. Busca cuál es diferente de las otras dos. En la práctica verás si acertaste. Puedes escuchar la regla otra vez antes de continuar.",
+                      "sha256":  "6081836ab8d41447a0c2f328d3900c010190ad67d62a0fa4afed2627cd90090c",
+                      "bytes":  593746
+                  },
+                  {
+                      "id":  "museum-ready",
+                      "text":  "Ahora verás las instrucciones y podrás comenzar la práctica. Yo me retiro para que observes con calma. Cuando termines de escuchar, pulsa ir a las instrucciones.",
+                      "sha256":  "82a399ab5e1df6204799120b5032e407fe90d835563b21b994da014a43d38f66",
+                      "bytes":  565276
+                  }
+              ]
+}

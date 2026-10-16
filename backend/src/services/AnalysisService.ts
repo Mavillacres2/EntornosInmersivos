@@ -13,6 +13,7 @@ import type {
 } from "../validation/schemas.js";
 
 export class AnalysisService {
+  private readonly closing = new Map<string,Promise<Document>>();
   constructor(private readonly repository: AnalysisRepository) {}
 
   async createSession(payload: CreateSessionDto): Promise<Document> {
@@ -57,15 +58,29 @@ export class AnalysisService {
     sessionId: string,
     payload: FinishSessionDto
   ): Promise<Document> {
+    const existing=this.closing.get(sessionId);if(existing)return existing;
+    const operation=this.performFinishSession(sessionId,payload);this.closing.set(sessionId,operation);
+    try{return await operation;}finally{this.closing.delete(sessionId);}
+  }
+
+  private async performFinishSession(sessionId:string,payload:FinishSessionDto):Promise<Document>{
     await this.assertSessionExists(sessionId);
+    const session=await this.repository.getSession(sessionId);
+    const results=(session?.activityResults ?? []) as ActivityResultDto[];
+    const required=[['classroom','go-no-go'],['space-station','cpt'],['interactive-museum','visual-discrimination']];
+    const complete=required.every(([scenario,activity])=>results.some(result=>result.scenarioId===scenario&&result.activityId===activity));
+    if(!complete)throw new ApiError(409,'Faltan resultados guardados de las tres actividades.');
+    if(session?.status==='finished'&&session.summary)return session.summary as Document;
     const [samples, events] = await Promise.all([
       this.repository.getSamplesForSummary(sessionId),
       this.repository.getEventsForSummary(sessionId)
     ]);
+    const interrupted=new Set(events.filter(event=>event.type==='ACTIVITY_INTERRUPTED'&&event.attemptId).map(event=>event.attemptId));
+    if(results.some(result=>result.attemptId&&interrupted.has(result.attemptId)))throw new ApiError(409,'Un resultado pertenece a un intento interrumpido. Revise los registros.');
     const summary = buildSessionSummary(sessionId, samples, events);
 
     await this.repository.saveSummary(sessionId, summary);
-    await this.repository.finishSession(sessionId, payload);
+    await this.repository.finishSession(sessionId, {...payload,scenariosCompleted:required.map(([scenario])=>scenario!)});
 
     return summary;
   }

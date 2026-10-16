@@ -103,12 +103,12 @@ export class VisualDiscriminationController {
     this.ensureReticle();
     this.ensureFrameTelemetry();
     this.telemetry?.onStateChange("instructions");
-    this.renderTextScreen("Actividad de Discriminacion Visual", [
-      "Veras tres caras esquematicas.",
-      "Dos seran iguales y una sera diferente.",
-      "Apunta con la reticula a la cara diferente y haz clic.",
-      "Primero haremos una practica con feedback.",
-      "Presiona 1 para comenzar. M vuelve al menu."
+    this.renderTextScreen("Encuentra la cara diferente", [
+      "Mira las tres caras.",
+      "Dos son iguales y una es diferente.",
+      "Apunta a la cara diferente y haz clic.",
+      "Primero vamos a practicar.",
+      "Pulsa 1 para empezar. M para volver al menú."
     ]);
   }
 
@@ -558,7 +558,12 @@ export class VisualDiscriminationController {
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillStyle = "#f8fbf2";
-    context.font = "800 88px Arial";
+    let titleSize = 88;
+    context.font = `800 ${titleSize}px Arial`;
+    while (titleSize > 48 && context.measureText(title).width > width - 240) {
+      titleSize -= 2;
+      context.font = `800 ${titleSize}px Arial`;
+    }
     context.fillText(title, width / 2, 140);
     context.fillStyle = "#e8f4ee";
     context.font = "500 48px Arial";

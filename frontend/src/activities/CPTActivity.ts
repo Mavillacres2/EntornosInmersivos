@@ -80,8 +80,8 @@ export class CPTActivity {
     this.state = CPTActivityState.Instructions;
     this.telemetry?.onStateChange(this.state);
     this.registerInputHandlers();
-    this.renderTextScreen("CPT", [
-      "Primero haremos una practica corta.",
+    this.renderTextScreen("Busca la letra", [
+      "Primero vamos a practicar.",
       `Presiona ESPACIO cuando aparezca la letra ${this.config.targetLetter}.`,
       "Con otras letras, espera sin responder.",
       "ESPACIO para practicar."

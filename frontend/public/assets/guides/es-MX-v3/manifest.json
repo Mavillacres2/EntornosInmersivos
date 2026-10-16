@@ -1,0 +1,118 @@
+﻿{
+    "version":  "es-MX-v3",
+    "voice":  "Microsoft Sabina Desktop",
+    "locale":  "es-MX",
+    "availableVoices":  [
+                            {
+                                "Name":  "Microsoft Sabina Desktop",
+                                "Culture":  "es-MX"
+                            },
+                            {
+                                "Name":  "Microsoft Zira Desktop",
+                                "Culture":  "en-US"
+                            }
+                        ],
+    "engine":  "Windows System.Speech",
+    "rate":  0,
+    "sentencePauseMs":  160,
+    "generatedAt":  "2026-10-16T05:20:20.3533356Z",
+    "sourceSHA256":  "58e9de35f4340ac4cb7dd16ac5add1ce36f90fc47f516be3958bafd56d60c51c",
+    "clips":  [
+                  {
+                      "id":  "classroom-welcome",
+                      "text":  "¡Hola! Soy Luma, tu guía del aula. Vamos a jugar con círculos de colores. Primero te explicaré las reglas y después podrás practicar.",
+                      "sha256":  "f266caef94be8d7df349cc888fb8d838b901021585515e35f754c7a00a1db0c3",
+                      "bytes":  374126,
+                      "visemeCount":  117,
+                      "wordCount":  23
+                  },
+                  {
+                      "id":  "classroom-rules",
+                      "text":  "Cuando aparezca un círculo verde, presiona la barra espaciadora. Si el círculo es rojo, espera sin responder.",
+                      "sha256":  "1736d58d96e9c53b3e91d1eee8424259267a4f1e7b6504ecc8cc25cb169b4207",
+                      "bytes":  278286,
+                      "visemeCount":  96,
+                      "wordCount":  17
+                  },
+                  {
+                      "id":  "classroom-demo",
+                      "text":  "Recuerda: verde significa presionar espacio. Rojo significa esperar. Si quieres, podemos escuchar las instrucciones otra vez.",
+                      "sha256":  "3ae0f892916e3e513d6e57a3f26293fd5d19b7174e3425006d80331f9259a07e",
+                      "bytes":  353166,
+                      "visemeCount":  115,
+                      "wordCount":  16
+                  },
+                  {
+                      "id":  "classroom-ready",
+                      "text":  "Ahora veremos las instrucciones del juego. La práctica viene primero. Yo me retiro para que puedas concentrarte. Cuando estés listo, selecciona ir a las instrucciones.",
+                      "sha256":  "96996afd68147d9d0d20a71b31a2fcbb259b58ad4dabb17215fd555734393dd2",
+                      "bytes":  428366,
+                      "visemeCount":  149,
+                      "wordCount":  25
+                  },
+                  {
+                      "id":  "space-welcome",
+                      "text":  "¡Hola! Soy Nova. Bienvenido a la estación espacial. Nuestra misión será buscar una letra. Primero aprenderemos las reglas y después practicarás.",
+                      "sha256":  "ade54a350e19cf285d1a125a529c93ab69576fc9eff20e471ebee8f545f3099a",
+                      "bytes":  412046,
+                      "visemeCount":  132,
+                      "wordCount":  21
+                  },
+                  {
+                      "id":  "space-rules",
+                      "text":  "Verás diferentes letras en la pantalla. Presiona la barra espaciadora cuando aparezca la letra equis. Con otras letras, espera sin responder.",
+                      "sha256":  "03104dbce760056f89aad97c60d2b3be73ceb33e52e0374e35c807f756c6c8b0",
+                      "bytes":  345806,
+                      "visemeCount":  124,
+                      "wordCount":  21
+                  },
+                  {
+                      "id":  "space-demo",
+                      "text":  "Esta es la letra que buscamos: equis. Cuando la veas en el juego, presiona espacio. Si aparece otra letra, espera. Puedes escuchar las instrucciones otra vez.",
+                      "sha256":  "c9702bd595b647818665a82002496b8c261d6470275fa3040cafcd5cc1654166",
+                      "bytes":  439886,
+                      "visemeCount":  139,
+                      "wordCount":  26
+                  },
+                  {
+                      "id":  "space-ready",
+                      "text":  "Ahora verás las instrucciones del juego. Primero vas a practicar. Yo me retiro durante la misión. Cuando estés listo, selecciona ir a las instrucciones.",
+                      "sha256":  "7ef2580b64242b0bb441e7a8be84d827f3a15e45f4a6d96603fab08011cd8c34",
+                      "bytes":  403246,
+                      "visemeCount":  136,
+                      "wordCount":  24
+                  },
+                  {
+                      "id":  "museum-welcome",
+                      "text":  "¡Hola! Soy Mica, tu guía del museo. Vamos a observar caras y descubrir sus diferencias. Primero conocerás la regla y después practicarás.",
+                      "sha256":  "d01935ad201092d0d2a5af1db5de7cd04e8ef21e994f07abbc2824e80dc26875",
+                      "bytes":  387246,
+                      "visemeCount":  121,
+                      "wordCount":  22
+                  },
+                  {
+                      "id":  "museum-rules",
+                      "text":  "Mira las tres caras. Dos son iguales y una es diferente. Apunta a la cara diferente y haz clic.",
+                      "sha256":  "c7bacbb0aae401c1b79a81ae0406326863c1a66e0615c55753ed0e2b91a1728d",
+                      "bytes":  263726,
+                      "visemeCount":  82,
+                      "wordCount":  19
+                  },
+                  {
+                      "id":  "museum-demo",
+                      "text":  "Compara las tres caras del juego. Busca cuál es diferente de las otras dos. En la práctica verás si acertaste. Puedes escuchar la regla otra vez antes de continuar.",
+                      "sha256":  "3bf52a42340357ed01d2d9e86dabaa00a938b5871f447c7f335913d165630abc",
+                      "bytes":  406766,
+                      "visemeCount":  144,
+                      "wordCount":  29
+                  },
+                  {
+                      "id":  "museum-ready",
+                      "text":  "Ahora verás las instrucciones y podrás comenzar la práctica. Yo me retiro para que observes con calma. Cuando estés listo, selecciona ir a las instrucciones.",
+                      "sha256":  "4d02a7bf95fb7c3e10cbb362919461833818b243bf06a3d8e73769a915dd036d",
+                      "bytes":  381166,
+                      "visemeCount":  136,
+                      "wordCount":  25
+                  }
+              ]
+}

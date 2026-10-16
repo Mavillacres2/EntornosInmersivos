@@ -65,6 +65,7 @@ export interface MovementBehaviorFeatures {
 }
 
 export interface ActivityContext {
+  attemptId?: string;
   sessionId: string;
   scenarioId: string | null;
   activityId: string | null;
@@ -84,6 +85,7 @@ export interface ActivityContext {
 }
 
 export interface BehaviorSample {
+  attemptId?: string;
   vision?: VisionMetrics;
   trunkSource?: "body-camera" | "upper-camera";
   sampleId: string;
@@ -124,6 +126,8 @@ export interface BehaviorSample {
 }
 
 export type BehaviorEventType =
+  | "ACTIVITY_STARTED"
+  | "ACTIVITY_INTERRUPTED"
   | "BLINK"
   | "OFF_TASK_ORIENTATION_START"
   | "OFF_TASK_ORIENTATION_END"
@@ -140,6 +144,8 @@ export type BehaviorEventType =
   | "BUFFER_OVERFLOW";
 
 export interface BehaviorEvent {
+  attemptId?: string;
+  activityState?: string | null;
   eventId: string;
   sessionId: string;
   elapsedMs: number;
@@ -151,6 +157,8 @@ export interface BehaviorEvent {
   condition: string | null;
   trialNumber: number | null;
   details?: {
+    activityState?: string;
+    reason?: string;
     eye?: "left" | "right" | "both";
     startTime?: number;
     endTime?: number;
@@ -164,6 +172,7 @@ export interface BehaviorEvent {
 }
 
 export interface ActivityResultEnvelope {
+  attemptId?: string;
   resultId: string;
   scenarioId: string;
   activityId: string;

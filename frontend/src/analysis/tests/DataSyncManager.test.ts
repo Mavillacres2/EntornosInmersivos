@@ -14,6 +14,17 @@ import type { AnalysisSessionManager } from "../tracking/AnalysisSessionManager"
 import type { BehaviorEvent } from "../types/BehaviorTypes";
 
 describe("DataSyncManager", () => {
+  it('only completes after server acceptance, retries one queued result and preserves attempt identity',async()=>{
+    let accept=false;const sent:unknown[]=[];
+    const adapter=new ActivityContextAdapter();adapter.startSession('session-1',performance.now());adapter.setScenario('classroom','go-no-go','attempt-1');
+    const api={sendBehaviorBatch:async()=>{},sendEventBatch:async()=>{},sendActivityResult:vi.fn(async(_id:string,result:unknown)=>{sent.push(result);if(!accept)throw new Error('offline');})} as unknown as AnalysisApiClient;
+    const manager=new DataSyncManager(adapter,api,{ensureRemoteSession:async()=>true,getSession:()=>({sessionId:'session-1'})} as unknown as AnalysisSessionManager,ANALYSIS_CONFIG);
+    const saved=vi.fn();manager.onResultSaved(saved);manager.start();const sink=adapter.createTelemetrySink('classroom','go-no-go');
+    sink.onActivityResult({totalTrials:100});sink.onActivityResult({totalTrials:100});
+    expect(await manager.flushFinal()).toBe(false);expect(manager.getCompletedScenarios()).toEqual([]);expect(saved).not.toHaveBeenCalled();
+    accept=true;expect(await manager.flushFinal()).toBe(true);expect(manager.getCompletedScenarios()).toEqual(['classroom']);expect(saved).toHaveBeenCalledTimes(1);
+    expect(sent.at(-1)).toMatchObject({attemptId:'attempt-1',scenarioId:'classroom',result:{totalTrials:100}});manager.dispose();
+  });
   beforeEach(() => {
     vi.useFakeTimers();
     vi.stubGlobal("window", globalThis);
