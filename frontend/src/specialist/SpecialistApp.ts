@@ -1,5 +1,4 @@
 import {
-  createNoticeCard,
   createProgressSteps,
   createSpecialistLayout,
   specialistIcon
@@ -87,70 +86,32 @@ export class SpecialistApp {
   }
 
   private createDashboard(): HTMLElement {
-    const section = document.createElement("section");
-    const steps = PROCESS_STEPS.map((step, index) => `
-      <li class="processStep">
-        <div class="processStepIcon"><span class="processNumber">${index + 1}</span>${specialistIcon(step.icon)}</div>
-        <div><h3>${step.title}</h3><p>${step.description}</p></div>
-      </li>`).join("");
-
-    section.className = "specialistContent specialistDashboard";
+    const section = document.createElement('section');
+    section.className = 'specialistContent specialistDashboard';
     section.innerHTML = `
-      <article class="specialistHero" aria-labelledby="evaluationHeroTitle">
-        <div class="heroContent">
-          <span class="heroIcon" aria-hidden="true">${specialistIcon("plus")}</span>
-          <p class="specialistEyebrow">Nueva evaluación</p>
-          <h2 id="evaluationHeroTitle">Iniciar una nueva sesión</h2>
-          <p>Prepare una evaluación cognitiva y configure los dispositivos necesarios antes de comenzar las actividades.</p>
-          <button class="primaryAction" type="button"><span>Iniciar evaluación</span>${specialistIcon("arrow-right")}</button>
-        </div>
-        <div class="cognitiveVisual">
-          <img
-            src="/cognitive-assessment-hero.png"
-            alt="Representación tecnológica de actividad cognitiva y señales neuronales"
-          />
-          <span class="visualCaption" aria-hidden="true">
-            ${specialistIcon("activity")}
-            Evaluación cognitiva inmersiva
-          </span>
-        </div>
+      <article class="specialistHero v1Hero" aria-labelledby="evaluationHeroTitle">
+        <div class="heroContent"><p class="specialistEyebrow">Observar · Comprender · Acompañar</p>
+          <h2 id="evaluationHeroTitle">Una mirada más completa a cada actividad</h2>
+          <p>Un espacio de trabajo para preparar experiencias inmersivas y revisar el desempeño junto con indicadores de movimiento y orientación.</p>
+          <div class="v1Tags"><span>3 entornos</span><span>Práctica guiada</span><span>Indicadores por sesión</span></div>
+        </div><div class="cognitiveVisual"><img src="/cognitive-assessment-hero.png" alt="Ilustración de conexiones y actividad cognitiva" /></div>
       </article>
-      <section class="processSection" aria-labelledby="evaluationProcessTitle">
-        <div class="sectionHeading">
-          <div><p class="specialistEyebrow">Recorrido de la sesión</p><h2 id="evaluationProcessTitle">Proceso de evaluación</h2></div>
-          <p>El sistema le guiará durante cada etapa de la sesión.</p>
-        </div>
-        <ol class="processSteps">${steps}</ol>
+      <section class="processSection" aria-labelledby="evaluationProcessTitle"><div class="sectionHeading"><div><p class="specialistEyebrow">Su espacio de trabajo</p><h2 id="evaluationProcessTitle">Un recorrido, paso a paso</h2></div><p>Para preparar una sesión, abra «Nueva evaluación» en el menú.</p></div>
+        <ol class="processSteps">${PROCESS_STEPS.map((step,index)=>`<li class="processStep"><div class="processStepIcon"><span class="processNumber">${index+1}</span>${specialistIcon(step.icon)}</div><div><h3>${step.title}</h3><p>${step.description}</p></div></li>`).join('')}</ol>
       </section>
-      <section class="specialistSection" aria-labelledby="recentEvaluationsTitle">
-        <div class="sectionHeader"><div><p class="specialistEyebrow">Seguimiento</p><h2 id="recentEvaluationsTitle">Evaluaciones recientes</h2></div></div>
-      </section>`;
-
-    section.querySelector(".primaryAction")?.addEventListener("click", () => {
-      this.activeSection = "new-evaluation";
-      this.render();
-    });
-    section.querySelector(".specialistSection")?.appendChild(
-      createNoticeCard("No hay evaluaciones recientes", "Las evaluaciones completadas aparecerán aquí.")
-    );
+      <div class="v1InfoGrid"><article><span class="v1InfoIcon">${specialistIcon('activity')}</span><h3>El desempeño en contexto</h3><p>Consulte respuestas, tiempos y eventos junto con indicadores conductuales. Revise siempre la calidad de la captura.</p></article><article><span class="v1InfoIcon">${specialistIcon('camera')}</span><h3>La imagen se procesa aquí</h3><p>El video se analiza en el equipo. Se envían indicadores y resultados, no grabaciones de la cámara.</p></article><article><span class="v1InfoIcon">${specialistIcon('clipboard')}</span><h3>Una herramienta de apoyo</h3><p>Los resultados complementan la revisión del especialista. No generan un diagnóstico automático.</p></article></div>`;
     return section;
   }
 
   private createNewEvaluation(): HTMLElement {
-    const section = document.createElement("section");
-    section.className = "specialistContent";
-    section.innerHTML = `
-      <div class="evaluationIntro"><div><p class="specialistEyebrow">Nueva sesión</p><h2>Nueva evaluación</h2><p>Complete la información necesaria antes de preparar el entorno de evaluación.</p></div></div>
-      <div class="evaluationFormPlaceholder"><h3>Información de la evaluación</h3><p>El código pseudonimizado del participante se solicitará durante la configuración de cámaras.</p></div>
-      <div class="specialistActions"><button class="secondaryAction" type="button">Volver</button><button class="primaryAction" type="button">Continuar a preparación</button></div>`;
-
-    section.querySelector(".secondaryAction")?.addEventListener("click", () => {
-      this.activeSection = "home";
-      this.render();
-    });
-    section.querySelector(".primaryAction")?.addEventListener("click", () => {
-      this.activeSection = "preparation";
-      this.render();
+    const section = document.createElement('section');
+    section.className = 'specialistContent';
+    section.append(createProgressSteps(0));
+    section.insertAdjacentHTML('beforeend', `<div class="v1SessionGrid"><article class="v1SessionCard"><p class="specialistEyebrow">Antes de comenzar</p><h2>Prepare una experiencia tranquila</h2><p>Usted configura la sesión. Después, el niño elige la aventura y escucha a su guía.</p><ul class="v1Checklist"><li><strong>Un código, sin nombres</strong><span>Tenga a mano el identificador del participante, por ejemplo P001. Se solicitará al configurar las cámaras.</span></li><li><strong>Una cámara es suficiente para comenzar</strong><span>La integrada registra rostro y tren superior. Una segunda cámara es opcional para cuerpo y manos.</span></li><li><strong>Un espacio cómodo</strong><span>Buena luz, rostro visible, sonido audible y teclado o ratón al alcance.</span></li></ul></article><aside class="v1SessionAside"><span class="v1InfoIcon">${specialistIcon('clipboard')}</span><h3>Participación informada</h3><p>Explique la experiencia y confirme las autorizaciones correspondientes con el representante antes de iniciar.</p><p>El permiso de cámara no sustituye el consentimiento informado. Consulte Privacidad y Condiciones al pie de la página.</p><strong>Durante la actividad</strong><p>El niño puede pedir ayuda o detenerse. La práctica le permite comprender la regla antes de empezar.</p></aside></div><div class="specialistActions"><button class="secondaryAction" type="button">Volver al inicio</button><button class="primaryAction" type="button">Preparar las cámaras →</button></div>`);
+    section.querySelector('.secondaryAction')?.addEventListener('click',()=>{this.activeSection='home';this.render();});
+    section.querySelector('.primaryAction')?.addEventListener('click',()=>{
+      if(this.startingCameraSetup)return;
+      this.startingCameraSetup=true;this.remove();this.handlers.startCameraSetup();
     });
     return section;
   }

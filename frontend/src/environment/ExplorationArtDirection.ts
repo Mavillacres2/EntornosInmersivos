@@ -215,7 +215,6 @@ export class ExplorationArtDirection {
     }
     this.line([[-7.22,3.85,-7.4],[-7.22,3.85,5.55],[7.22,3.85,5.55],[7.22,3.85,-7.4]],.09,plaster);
     for(const side of [-1,1])for(let z=-6.8;z<5;z+=.24)this.panel(.075,1.1,.05,oak,[side*7.25,.62,z],Math.PI/2);
-    this.label('MUSEO DE LAS MARAVILLAS','Observa · Imagina · Descubre',4.8,.43,[0,4.3,5.58],'#8056a4');
     // Relief-bearing plinths wrap the existing exhibits at their original floor positions.
     const plinths=this.scene.meshes.filter(mesh=>/Pedestal$/.test(mesh.name)&&!mesh.name.startsWith('artV2')).slice();
     plinths.forEach(mesh=>{

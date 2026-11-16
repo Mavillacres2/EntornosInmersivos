@@ -17,7 +17,7 @@ export function createScenarioSelector(onSelect: (id: ScenarioId) => void, onFin
   selector.innerHTML = `<section class="scenarioShell">
     <p class="scenarioEyebrow">NEUROEXPLORA · UN MUNDO POR DESCUBRIR</p>
     <h1 id="scenarioTitle">Elige tu próxima aventura</h1>
-    <p class="scenarioIntro">Tres mundos para mirar, explorar y jugar. ¿Por dónde empezamos?</p>
+    <p class="scenarioIntro">Toca la aventura que más te guste. Primero practicaremos juntos.</p>
     <div class="scenarioGrid"></div>
     <footer class="scenarioFooter"><p>En cada mundo practicarás antes de empezar.<br>Puedes volver aquí para elegir otra aventura.</p></footer>
   </section>`;
@@ -47,6 +47,9 @@ export function createScenarioSelector(onSelect: (id: ScenarioId) => void, onFin
     button.innerHTML = `<span>${option.button}</span>${worldIcon("arrow")}`;
     button.addEventListener("click", () => onSelect(option.id));
     card.appendChild(button);
+    // One accessible button spans the card; artwork and title are also easy to tap.
+    button.classList.add('scenarioCardAction');
+    button.setAttribute('aria-label', option.button);
     grid.appendChild(card);
   });
   const finish = document.createElement("button");
@@ -57,6 +60,6 @@ export function createScenarioSelector(onSelect: (id: ScenarioId) => void, onFin
   finish.hidden = !!options && !WORLDS.every(world=>options.progress[world.id].status==='completed');
   finish.addEventListener("click", onFinish);
   selector.querySelector(".scenarioFooter")!.appendChild(finish);
-  if(options?.onHelp){const help=document.createElement('button');help.type='button';help.className='finishEvaluationButton';help.textContent='Escuchar a Luma';help.disabled=!!options.busy;help.addEventListener('click',options.onHelp);selector.querySelector('.scenarioFooter')!.append(help);}
+  if(options?.onHelp){const help=document.createElement('button');help.type='button';help.className='finishEvaluationButton';help.textContent='🔊 ¿Cómo juego?';help.disabled=!!options.busy;help.addEventListener('click',options.onHelp);selector.querySelector('.scenarioFooter')!.append(help);}
   return selector;
 }

@@ -72,6 +72,7 @@ export class AnalysisApplicationController {
     this.onReady = onReady;
     this.cameraManager.initialize();
     this.setupView.show();
+    this.apiClient.startMonitoring();
     this.debugOverlay?.show();
     this.unsubscribeCameraStatus = this.cameraManager.onStatusChange((status) => {
       this.setupView.updateCameraStatus(status);
@@ -154,6 +155,7 @@ export class AnalysisApplicationController {
   }
 
   dispose(): void {
+    this.apiClient.stopMonitoring();
     this.trackingManager.dispose();
     this.dataSyncManager.dispose();
     this.mediaPipeManager.dispose();
@@ -303,6 +305,7 @@ export class AnalysisApplicationController {
   private async continueToScenarios(): Promise<void> {
     this.sessionManager.setState("ready");
     this.trackingManager.stopCameraPreview();
+    this.apiClient.stopMonitoring();
     this.setupView.remove();
     this.trackingManager.start();
     this.sessionManager.setState("analyzing");

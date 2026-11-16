@@ -1,3 +1,4 @@
+import { createPrivacyFooter } from '../../specialist/PrivacyFooter';
 import { ANALYSIS_CONFIG } from "../config/AnalysisConfig";
 import type { HandDetection, HeadOrientation } from "../types/AnalysisTypes";
 import type {
@@ -46,6 +47,12 @@ export class EvaluationSetupView {
   private calibrationProgress: HTMLProgressElement | null = null;
   private sessionCreated = false;
   private calibrated = false;
+  private framingChecked = false;
+  private fullCameraActive = false;
+  private busy = false;
+  private canSelectUpper = false;
+  private canSelectFull = false;
+  private selectedUpper: string | null = null;
   private upperCameraActive = false;
   private readonly handlers: EvaluationSetupHandlers;
   private readonly debug: boolean;
@@ -65,33 +72,33 @@ export class EvaluationSetupView {
         <header class="setupHeader">
           <div>
             <p class="setupEyebrow">NeuroExplora · Preparación de la sesión</p>
-            <h1 id="setupTitle">Preparemos las cámaras</h1>
-            <p class="setupIntro">Un buen encuadre nos ayuda a registrar los movimientos durante las actividades.</p>
+            <h1 id="setupTitle">Prepare la sesión en cuatro pasos</h1>
+            <p class="setupIntro">Complete esta preparación con el niño. Después podrá elegir y explorar sus aventuras.</p>
           </div>
-          <span class="backendBadge" id="analysisBackendStatus">Conexión por comprobar</span>
+          <span class="backendBadge" id="analysisBackendStatus" role="status" aria-live="polite">Comprobando conexión…</span>
         </header>
         <ol class="setupSteps" aria-label="Progreso de configuración">
           <li data-step="1" aria-current="step"><span>1</span> Identificar sesión</li>
           <li data-step="2"><span>2</span> Ajustar cámaras</li>
-          <li data-step="3"><span>3</span> Calibrar y continuar</li>
+          <li data-step="3"><span>3</span> Comprobar encuadre</li><li data-step="4"><span>4</span> Calibrar posición</li>
         </ol>
 
         <div class="setupParticipant">
           <label for="participantCode">Código del participante</label>
           <div class="setupInlineControl">
             <input id="participantCode" autocomplete="off" maxlength="40" placeholder="Ej. P001" aria-describedby="participantHint" />
-            <button id="createAnalysisSession" type="button">Crear sesión</button>
+            <button id="createAnalysisSession" type="button">1. Crear sesión</button>
           </div>
           <p class="setupHint" id="participantHint">Utiliza el código asignado al participante, sin nombres ni apellidos.</p>
         </div>
 
         <div class="setupToolbar">
-          <button id="requestCameraPermission" type="button" disabled>Conectar cámaras</button>
-          <button id="testAnalysisCameras" type="button" class="secondaryButton" disabled>Comprobar encuadre</button>
-          <button id="calibrateAnalysis" type="button" class="secondaryButton" disabled>Calibrar posición</button>
+          <button id="requestCameraPermission" type="button" disabled>2. Conectar cámara</button>
+          <button id="testAnalysisCameras" type="button" class="secondaryButton" disabled>3. Comprobar encuadre</button>
+          <button id="calibrateAnalysis" type="button" class="secondaryButton" disabled>4. Calibrar posición</button>
         </div>
 
-        <div class="cameraSetupGrid">
+        <div class="setupHelp"><details><summary>¿Qué hace cada paso?</summary><p><strong>Conectar cámara:</strong> autoriza el video y permite elegir el dispositivo. CAM2 es opcional.</p><p><strong>Comprobar encuadre:</strong> toma varias detecciones para verificar que el rostro y los hombros sean visibles. Si pide un ajuste, cambie distancia o iluminación y repita.</p><p><strong>Calibrar posición:</strong> con el niño mirando al centro, calcula una orientación frontal de referencia para medir giros relativos. No evalúa la atención ni diagnostica.</p><p>Mantenga esta pestaña visible. Si cambia CAM1 o la posición de la cámara, compruebe y calibre otra vez.</p></details></div><div class="cameraSetupGrid">
           <article class="cameraSetupPanel">
             <div class="cameraPanelHeading">
               <div>
@@ -112,14 +119,14 @@ export class EvaluationSetupView {
             <div class="cameraPanelHeading">
               <div>
                 <span>CAM 2</span>
-                <h2>Cuerpo y manos</h2>
+                <h2>Cuerpo y manos <small>Opcional</small></h2>
               </div>
               <strong id="fullCameraStatus" data-tone="neutral">Sin configurar</strong>
             </div>
             <label for="fullCameraSelect">Camara externa</label>
             <select id="fullCameraSelect" disabled></select>
             <div class="cameraPreview" id="fullCameraPreview">
-              <span>Selecciona una cámara externa diferente</span>
+              <span>Sin segunda cámara, puede continuar con CAM1</span>
             </div>
             <p class="cameraGuidance"><strong>Vista amplia del cuerpo</strong>Coloca la cámara a distancia para incluir manos, piernas y pies.</p>
           </article>
@@ -135,7 +142,7 @@ export class EvaluationSetupView {
 
         <footer class="setupFooter">
           <p><strong>Privacidad durante toda la sesión</strong><br />El video se procesa en este equipo y no se guarda.</p>
-          <button id="continueToScenarios" type="button" disabled>Elegir escenario →</button>
+          <button id="continueToScenarios" type="button" disabled>Todo listo: pasar al niño →</button>
         </footer>
       </section>
     `;
@@ -145,6 +152,7 @@ export class EvaluationSetupView {
     detection.id = "visionDetectionStatus";
     detection.setAttribute("role", "status");
     root.querySelector(".cameraSetupGrid")?.after(detection);
+    root.querySelector(".setupShell")?.append(createPrivacyFooter());
     this.captureElements();
     this.registerHandlers();
   }
@@ -221,32 +229,43 @@ export class EvaluationSetupView {
   }
 
   updateCameraStatus(status: PhysicalCameraManagerStatus): void {
+    const changed = this.selectedUpper !== status.upperBody.selectedDeviceId;
+    if (changed || (this.upperCameraActive && !status.upperBody.streamActive)) this.invalidateCalibration();
+    this.selectedUpper = status.upperBody.selectedDeviceId;
     this.upperCameraActive = status.upperBody.streamActive;
-    if (this.sessionCreated) this.updateSteps(this.calibrated ? 4 : this.upperCameraActive ? 3 : 2);
+    this.fullCameraActive = status.fullBody.streamActive;
+    if (this.sessionCreated) this.updateSteps(this.calibrated ? 5 : this.framingChecked ? 4 : this.upperCameraActive ? 3 : 2);
     this.populateSelect(this.upperSelect, status.devices, status.upperBody.selectedDeviceId, false);
     this.populateSelect(this.fullSelect, status.devices, status.fullBody.selectedDeviceId, true);
 
     if (this.upperSelect) {
-      this.upperSelect.disabled = !status.permissionGranted || status.devices.length === 0;
+      this.canSelectUpper = status.permissionGranted && status.devices.length > 0;
+      this.upperSelect.disabled = this.busy || !this.canSelectUpper;
     }
     if (this.fullSelect) {
-      this.fullSelect.disabled = !status.permissionGranted || status.devices.length < 2;
+      this.canSelectFull = status.permissionGranted && status.devices.length >= 2;
+      this.fullSelect.disabled = this.busy || !this.canSelectFull;
     }
 
     this.renderSlotStatus(this.upperStatus, status.upperBody.state, status.upperBody.error);
     this.renderSlotStatus(this.fullStatus, status.fullBody.state, status.fullBody.error);
 
     if (this.testButton) {
-      this.testButton.disabled = !status.upperBody.streamActive;
+      this.testButton.disabled = this.busy || !status.upperBody.streamActive;
     }
     if (this.calibrateButton) {
-      this.calibrateButton.disabled = !status.upperBody.streamActive;
+      this.calibrateButton.disabled = this.busy || !status.upperBody.streamActive || !this.framingChecked;
     }
   }
 
   showQualityReport(report: CameraQualityReport): void {
+    this.framingChecked = report.upperBody.adequate;
+    this.calibrated = false;
+    if (this.continueButton) this.continueButton.disabled = true;
+    this.updateSteps(this.framingChecked ? 4 : 3);
     this.renderQuality(this.upperStatus, report.upperBody.adequate, report.upperBody.message);
-    this.renderQuality(this.fullStatus, report.fullBody.adequate, report.fullBody.message);
+    if (this.fullCameraActive) this.renderQuality(this.fullStatus, report.fullBody.adequate, report.fullBody.message);
+    else if (this.fullStatus) { this.fullStatus.textContent = 'No utilizada · opcional'; this.fullStatus.dataset.tone = 'neutral'; }
     this.setMessage(
       report.upperBody.adequate
         ? "Encuadre comprobado. Realiza la calibracion frontal."
@@ -265,8 +284,8 @@ export class EvaluationSetupView {
 
   setCalibrated(): void {
     this.calibrated = true;
-    this.updateSteps(4);
-    this.setMessage("Todo listo. Puedes elegir el escenario para comenzar.");
+    this.updateSteps(5);
+    this.setMessage("Preparación completada. Ahora el niño puede elegir su aventura.");
 
     if (this.calibrateButton) {
       this.calibrateButton.textContent = "Calibrado";
@@ -281,11 +300,15 @@ export class EvaluationSetupView {
       return;
     }
 
-    this.backendStatus.textContent = connected ? "Servidor conectado" : "Servidor sin conexión";
+    this.backendStatus.textContent = connected ? "Guardado disponible · conexión verificada" : "Sin conexión · no cierre esta página";
     this.backendStatus.dataset.tone = connected ? "success" : "warning";
+    this.backendStatus.title = "Comprobación automática cada 5 segundos; también al volver a esta ventana.";
   }
 
   setBusy(busy: boolean): void {
+    this.busy = busy;
+    if (this.upperSelect) this.upperSelect.disabled = busy || !this.canSelectUpper;
+    if (this.fullSelect) this.fullSelect.disabled = busy || !this.canSelectFull;
     [
       this.createSessionButton,
       this.permissionButton,
@@ -310,6 +333,14 @@ export class EvaluationSetupView {
     this.fullVideo = null;
     this.upperLandmarkCanvas = null;
     this.fullLandmarkCanvas = null;
+  }
+
+  private invalidateCalibration(): void {
+    this.calibrated = false;
+    this.framingChecked = false;
+    if (this.continueButton) this.continueButton.disabled = true;
+    if (this.calibrateButton) this.calibrateButton.textContent = '4. Calibrar posición';
+    if (this.calibrationProgress) this.calibrationProgress.value = 0;
   }
 
   private updateSteps(current: number): void {
@@ -351,7 +382,10 @@ export class EvaluationSetupView {
       void this.runAction(() => this.handlers.createSession(participantCode));
     });
     this.permissionButton?.addEventListener("click", () => {
-      void this.runAction(() => this.handlers.requestCameras());
+      void this.runAction(async () => {
+        await this.handlers.requestCameras();
+        if (this.upperCameraActive) this.setMessage('Cámara conectada. Acomode rostro y hombros y pulse «3. Comprobar encuadre».');
+      });
     });
     this.upperSelect?.addEventListener("change", () => {
       void this.runAction(() =>
@@ -367,6 +401,7 @@ export class EvaluationSetupView {
       void this.runAction(() => this.handlers.testCameras());
     });
     this.calibrateButton?.addEventListener("click", () => {
+      this.calibrated = false;
       void this.runAction(() => this.handlers.calibrate());
     });
     this.continueButton?.addEventListener("click", () => {
@@ -482,7 +517,8 @@ export class EvaluationSetupView {
       return !this.calibrated;
     }
 
-    if (button === this.testButton || button === this.calibrateButton) {
+    if (button === this.calibrateButton) return !this.upperCameraActive || !this.framingChecked;
+    if (button === this.testButton) {
       return !this.upperCameraActive;
     }
 

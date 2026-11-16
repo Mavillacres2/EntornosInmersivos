@@ -48,3 +48,5 @@ engine.runRenderLoop(() => scene?.render());
 window.addEventListener('resize', () => engine.resize());
 window.addEventListener('beforeunload', () => { journey?.dispose(); analysis.dispose(); probe.dispose(); engine.dispose(); });
 specialist.show();
+
+import './v1.css';

@@ -93,6 +93,18 @@ describe("CameraManager", () => {
     vi.stubGlobal("window", globalThis);
   });
 
+  it("no abre CAM2 automaticamente si aparecen camaras virtuales", async () => {
+    const devices = new FakeMediaDevices(["integrated", "virtual"]);
+    const manager = new CameraManager(devices as unknown as MediaDevices, createVideo);
+    await manager.requestPermission();
+    await manager.startAll();
+    expect(manager.getStatus().fullBody.selectedDeviceId).toBeNull();
+    expect(devices.constraints).toHaveLength(2);
+    manager.setFullBodyCamera("virtual");
+    await manager.requestPermission();
+    expect(manager.getStatus().fullBody.selectedDeviceId).toBe("virtual");
+    manager.dispose();
+  });
   it("permite continuar con CAM1 cuando solo existe una camara", async () => {
     const mediaDevices = new FakeMediaDevices(["integrated"]);
     const manager = new CameraManager(
@@ -116,6 +128,7 @@ describe("CameraManager", () => {
     );
 
     await manager.requestPermission();
+    manager.setFullBodyCamera("usb");
     await manager.startAll();
 
     const status = manager.getStatus();
@@ -156,6 +169,7 @@ describe("CameraManager", () => {
     );
 
     await manager.requestPermission();
+    manager.setFullBodyCamera("usb");
     await manager.startAll();
     manager.stopAll();
 
@@ -193,6 +207,7 @@ describe("CameraManager", () => {
 
     manager.onDisconnect(disconnected);
     await manager.requestPermission();
+    manager.setFullBodyCamera("usb");
     await manager.startAll();
     mediaDevices.devices = mediaDevices.devices.filter(
       (device) => device.deviceId !== "usb"
@@ -214,6 +229,7 @@ describe("CameraManager", () => {
     );
 
     await manager.requestPermission();
+    manager.setFullBodyCamera("usb");
     await manager.startAll();
     mediaDevices.devices = mediaDevices.devices.filter(
       (device) => device.deviceId !== "integrated"
