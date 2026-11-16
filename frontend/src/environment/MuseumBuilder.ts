@@ -737,7 +737,6 @@ export class MuseumBuilder {
 
   private createActivityPanel(): Mesh {
     this.createBox({ name: "visualDiscriminationActivityFeatureWall", width: 8.5, height: 4.15, depth: 0.08, position: new Vector3(0, 2.45, 5.88), material: this.materials.accentWall });
-    this.createMuseumSign({ name: "activityZoneHeader", title: "LABORATORIO DE PERCEPCION", subtitle: "Observa - Compara - Identifica", width: 4.8, height: 0.62, position: new Vector3(0, 4.12, 5.78) });
 
     const panel = MeshBuilder.CreatePlane("visualDiscriminationActivityPanel", { width: 7.4, height: 3.7 }, this.scene);
 
@@ -758,7 +757,7 @@ export class MuseumBuilder {
 
   private createActivityPreviewPoster(): void {
     const material = new StandardMaterial("visualDiscriminationPreviewPosterMaterial", this.scene);
-    const poster = MeshBuilder.CreatePlane("visualDiscriminationPreviewPoster", { width: 4.85, height: 3.38 }, this.scene);
+    const poster = MeshBuilder.CreatePlane("visualDiscriminationPreviewPoster", { width: 4.6, height: 3.1 }, this.scene);
 
     material.diffuseTexture = new Texture("/museum/posters/observa-las-caras.png", this.scene);
     material.emissiveColor = new Color3(0.16, 0.16, 0.12);

@@ -1,3 +1,4 @@
+import { visualRuleDemo } from './VisualRuleDemo';
 import { Camera } from '@babylonjs/core';
 import type { Observer, Scene } from '@babylonjs/core';
 import { GUIDE_CONFIG, guideClips } from './GuideSceneConfiguration';
@@ -79,12 +80,12 @@ export class VirtualGuideManager {
       <div class="guidePortraitLabel"><span class="guideName">${config.name}</span><span>${config.role}</span><span class="guideTalking" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
       <article class="guideCard">
         <div class="guideProgress" aria-label="Progreso de la explicación"></div>
-        <h1 id="guide-title" tabindex="-1"></h1><p class="guideTranscript"></p>
+        <h1 id="guide-title" tabindex="-1"></h1><p class="guideShortRule"></p><details class="guideFullText"><summary>Ver explicación completa</summary><p class="guideTranscript"></p></details>
         <div class="guideDemo" aria-label="Recordatorio visual de la regla"></div>
         <p class="guidePlaybackStatus" role="status" aria-live="polite"></p>
         <div class="guideAudioControls"><button type="button" data-action="repeat">${worldIcon('sound')} Escuchar otra vez</button><button type="button" data-action="mute" aria-pressed="false">Silenciar voz</button><label>Volumen<input type="range" min="0" max="1" step="0.05" value="0.85" aria-label="Volumen del guía"></label></div>
         <button type="button" class="guideNext" data-action="next">Continuar ${worldIcon('arrow')}</button>
-        <div class="guideSecondary"><button type="button" data-action="written">Continuar leyendo, sin voz</button><button type="button" data-action="close">Volver a explorar</button></div>
+        <div class="guideSecondary"><button type="button" data-action="written">Ver ejemplo sin voz</button><button type="button" data-action="close">Volver a explorar</button></div>
       </article>`;
     root.addEventListener('click', event => {
       const action = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-action]')?.dataset.action;
@@ -96,7 +97,7 @@ export class VirtualGuideManager {
         this.pendingNarration = false;
         this.speech.stop(); this.flow?.acknowledge();
         guideNarrationLog.record('written-fallback', this.clips[this.flow!.index]!.id);
-        this.animation?.setState('WAITING'); this.updateControls('Instrucciones escritas. Continúa cuando las hayas leído.');
+        this.animation?.setState('WAITING'); this.updateControls('Mira el ejemplo. Si necesitas ayuda, llama al especialista.');
       } else if (action === 'mute') {
         const muted = !this.speech.snapshot().muted; this.speech.setMuted(muted);
         const button = root.querySelector<HTMLButtonElement>('[data-action="mute"]')!;
@@ -157,12 +158,8 @@ export class VirtualGuideManager {
     root.querySelector('.guideProgress')!.innerHTML = this.clips.map((_, i) => `<span class="${i <= index ? 'is-current' : ''}" aria-hidden="true"></span>`).join('') + `<small>${index + 1} de ${this.clips.length}</small>`;
     const demo = root.querySelector<HTMLElement>('.guideDemo')!;
     demo.hidden = index === 0 || index === this.clips.length - 1;
-    // Static rule reminders, never extra trials or invented face stimuli.
-    demo.innerHTML = this.options.theme === 'classroom'
-      ? '<span><i class="guideGreen"></i> Verde <b>ESPACIO</b></span><span><i class="guideRed"></i> Rojo <b>ESPERA</b></span>'
-      : this.options.theme === 'space'
-        ? '<span><i class="guideTarget">X</i><b>ESPACIO</b></span><span>Otras letras <b>ESPERA</b></span>'
-        : '<span><b>1 · OBSERVA</b> Mira las tres caras</span><span><b>2 · COMPARA</b> Dos son iguales</span><span><b>3 · ELIGE</b> Haz clic en la diferente</span>';
+    demo.innerHTML = visualRuleDemo(this.options.theme);
+    root.querySelector('.guideShortRule')!.textContent = index === 0 ? 'Escucha a tu guía. Después practicaremos juntos.' : index === this.clips.length - 1 ? '¡Ya conoces la regla! Vamos a practicar.' : this.options.theme === 'classroom' ? 'Verde: pulsa. Rojo: espera.' : this.options.theme === 'space' ? 'Pulsa solo cuando veas la X.' : 'Mira las tres caras y elige la diferente.';
     root.querySelector('h1')!.focus();
     this.playCurrent();
   }
@@ -171,7 +168,7 @@ export class VirtualGuideManager {
     if (state === 'complete') { this.flow?.acknowledge(); this.animation?.setState('WAITING'); }
     this.root.classList.toggle('is-speaking', state === 'playing' && !this.speech.snapshot().muted);
     const silent = this.speech.snapshot().muted || this.speech.snapshot().volume === 0;
-    const status = state === 'loading' ? 'Preparando la voz…' : state === 'playing' ? silent ? 'Voz silenciada. Las instrucciones siguen en pantalla.' : 'Escucha a tu guía…' : state === 'complete' ? '¿Lo escuchamos otra vez o continuamos?' : state === 'error' ? 'No se pudo reproducir la voz. Reintenta o usa las instrucciones escritas.' : '';
+    const status = state === 'loading' ? 'Preparando la voz…' : state === 'playing' ? silent ? 'Voz silenciada. Las instrucciones siguen en pantalla.' : 'Escucha a tu guía…' : state === 'complete' ? '¿Lo escuchamos otra vez o continuamos?' : state === 'error' ? 'No se escuchó la voz. Pulsa «Escuchar otra vez» o pide ayuda.' : '';
     this.updateControls(status);
   }
   private updateControls(status: string): void {
@@ -179,7 +176,7 @@ export class VirtualGuideManager {
     this.root.querySelector('.guidePlaybackStatus')!.textContent = status;
     const next = this.root.querySelector<HTMLButtonElement>('[data-action="next"]')!;
     next.disabled = !this.flow.acknowledged;
-    next.innerHTML = `${this.flow.index === this.clips.length - 1 ? 'Ir a las instrucciones' : 'Continuar'} ${worldIcon('arrow')}`;
+    next.innerHTML = `${this.flow.index === this.clips.length - 1 ? '¡Vamos a practicar!' : 'Siguiente paso'} ${worldIcon('arrow')}`;
   }
   private advance(): void {
     if (!this.flow) return;

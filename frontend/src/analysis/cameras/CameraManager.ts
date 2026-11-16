@@ -235,10 +235,9 @@ export class CameraManager {
     }
 
     if (!fullSlot.selectedDeviceId || !this.hasDevice(fullSlot.selectedDeviceId)) {
-      fullSlot.selectedDeviceId =
-        devices.find((device) => device.deviceId !== upperSlot.selectedDeviceId)
-          ?.deviceId ?? null;
-      fullSlot.state = fullSlot.selectedDeviceId ? "selected" : "unavailable";
+      // CAM2 is opt-in: an enumerated virtual device may have no physical source.
+      fullSlot.selectedDeviceId = null;
+      fullSlot.state = "unavailable";
     }
   }
 

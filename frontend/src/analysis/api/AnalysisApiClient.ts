@@ -18,6 +18,12 @@ export type ApiConnectionListener = (connected: boolean) => void;
 
 export class AnalysisApiClient {
   private connected = false;
+  private connectionKnown = false;
+  private monitorTimer: number | null = null;
+  private monitoring = false;
+  private monitorGeneration = 0;
+  private healthRequest: Promise<boolean> | null = null;
+  private readonly refreshHealth = (): void => { if (this.monitoring) void this.health(); };
   private readonly connectionListeners = new Set<ApiConnectionListener>();
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
@@ -71,13 +77,32 @@ export class AnalysisApiClient {
     });
   }
 
-  async health(): Promise<boolean> {
-    try {
-      await this.request("/health", { method: "GET" });
-      return true;
-    } catch {
-      return false;
-    }
+  health(): Promise<boolean> {
+    if (this.healthRequest) return this.healthRequest;
+    this.healthRequest = this.request('/health', { method: 'GET' })
+      .then(() => true, () => false).finally(() => { this.healthRequest = null; });
+    return this.healthRequest;
+  }
+
+  startMonitoring(intervalMs = 5000): void {
+    if (this.monitoring) return;
+    this.monitoring = true;
+    const generation = ++this.monitorGeneration;
+    window.addEventListener('online', this.refreshHealth);
+    window.addEventListener('focus', this.refreshHealth);
+    const poll = async (): Promise<void> => {
+      await this.health();
+      if (this.monitoring && generation === this.monitorGeneration) this.monitorTimer = window.setTimeout(() => { void poll(); }, intervalMs);
+    };
+    void poll();
+  }
+
+  stopMonitoring(): void {
+    this.monitoring = false;
+    if (this.monitorTimer !== null) window.clearTimeout(this.monitorTimer);
+    this.monitorTimer = null;
+    window.removeEventListener('online', this.refreshHealth);
+    window.removeEventListener('focus', this.refreshHealth);
   }
 
   isConnected(): boolean {
@@ -86,7 +111,7 @@ export class AnalysisApiClient {
 
   onConnectionChange(listener: ApiConnectionListener): () => void {
     this.connectionListeners.add(listener);
-    listener(this.connected);
+    if (this.connectionKnown) listener(this.connected);
 
     return () => this.connectionListeners.delete(listener);
   }
@@ -125,10 +150,11 @@ export class AnalysisApiClient {
   }
 
   private setConnected(connected: boolean): void {
-    if (this.connected === connected) {
+    if (this.connectionKnown && this.connected === connected) {
       return;
     }
 
+    this.connectionKnown = true;
     this.connected = connected;
     this.connectionListeners.forEach((listener) => listener(connected));
   }

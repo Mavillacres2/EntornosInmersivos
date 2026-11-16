@@ -1,3 +1,4 @@
+import { createPrivacyFooter } from './PrivacyFooter';
 export type SpecialistSection = "home" | "new-evaluation" | "preparation" | "evaluations" | "results";
 
 export type SpecialistIconName =
@@ -102,7 +103,7 @@ export function createSpecialistLayout(options: SpecialistLayoutOptions, content
     nav?.appendChild(button);
   });
 
-  root.querySelector(".specialistWorkspace")?.appendChild(content);
+  root.querySelector(".specialistWorkspace")?.append(content, createPrivacyFooter());
   return root;
 }
 

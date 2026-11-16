@@ -17,6 +17,7 @@ export class CharacterAnimationController {
   private readonly character: GuideCharacter;
   private readonly reducedMotion: boolean;
   private readonly target = Quaternion.Identity();
+  private readonly restingPositions = new Map<TransformNode, number>();
   constructor(character: GuideCharacter, reducedMotion = false) { this.character = character; this.reducedMotion = reducedMotion; }
   setState(state: GuideState): void { this.state = state; this.stateTime = 0; }
   update(deltaSeconds: number, amplitude: number, speaking = amplitude > 0, audioTime?: number, mouthPose?: MouthPose): void {
@@ -24,7 +25,7 @@ export class CharacterAnimationController {
     this.time += dt; this.stateTime += dt;
     const c = this.character, t = this.time, motion = this.reducedMotion ? .12 : 1;
     const voiceTime = speaking && audioTime !== undefined ? audioTime : this.stateTime;
-    const blend = 1 - Math.exp(-dt * 9);
+    const blend = 1 - Math.exp(-dt * 5.5);
     const mix = (node: TransformNode, x: number, y: number, z: number) => {
       Quaternion.FromEulerAnglesToRef(x * motion, y * motion, z * motion, this.target);
       node.rotationQuaternion ??= Quaternion.Identity();
@@ -33,9 +34,10 @@ export class CharacterAnimationController {
     const variant = c.theme === 'space' ? 1.15 : c.theme === 'museum' ? .8 : .9;
     const explaining = this.state === 'EXPLAINING', pointing = this.state === 'DEMONSTRATING';
     const phraseGesture = speaking ? Math.sin(Math.min(1, (voiceTime % 4.6) / 1.1) * Math.PI) * .12 : 0;
-    mix(c.torso, 0, Math.sin(t * .31) * .009, Math.sin(t * .85) * .012);
-    c.torso.position.y = Math.sin(t * 1.65) * .006 * motion;
-    mix(c.head, Math.sin(voiceTime * 2) * amplitude * .035, pointing ? -.12 : Math.sin(t * .43) * .035, Math.sin(t * .6) * .024);
+    mix(c.torso, 0, Math.sin(t * .31) * .025, Math.sin(t * .85) * .022);
+    if (!this.restingPositions.has(c.torso)) this.restingPositions.set(c.torso, c.torso.position.y);
+    c.torso.position.y = this.restingPositions.get(c.torso)! + Math.sin(t * 1.65) * .009 * motion;
+    mix(c.head, Math.sin(voiceTime * 2) * amplitude * .035, pointing ? -.12 : Math.sin(t * .43) * .055, Math.sin(t * .6) * .024);
     mix(c.leftArm, explaining ? -.16 : -.04, 0, pointing ? -1.12 : -.14 - phraseGesture * variant);
     mix(c.rightArm, explaining ? -.16 : -.04, 0, .14 + phraseGesture * variant);
     mix(c.leftForearm, pointing ? -.32 : -.13, 0, explaining ? -.13 : -.03);
@@ -59,9 +61,12 @@ export class CharacterAnimationController {
       if (this.blinkTime >= .2) { this.blinkTime = -1; this.nextBlink = t + [4.9, 3.9, 5.4, 3.4][this.blinkIndex++ % 4]!; }
     }
     c.eyes.forEach(eye => { eye.scaling.y = eyeOpen; });
-    c.pupils.forEach(pupil => { pupil.position.x = Math.sin(t * .37) * .006 * motion; });
+    c.pupils.forEach(pupil => {
+      if (!this.restingPositions.has(pupil)) this.restingPositions.set(pupil, pupil.position.x);
+      pupil.position.x = this.restingPositions.get(pupil)! + Math.sin(t * .37) * .006 * motion;
+    });
     const targets=mouthPose??{open:amplitude,round:0,wide:0};
-    if (!speaking) { this.mouthAmplitude = 0; this.mouthRound=0;this.mouthWide=0; }
+    if (!speaking) { this.mouthAmplitude = 0; this.mouthRound = 0; this.mouthWide = 0; }
     else {
       const smoothing=1-Math.exp(-dt*22);
       this.mouthAmplitude+=(targets.open-this.mouthAmplitude)*smoothing;

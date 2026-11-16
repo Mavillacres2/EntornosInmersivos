@@ -81,8 +81,9 @@ export class MenuHost {
         this.root.setAttribute('role', 'dialog');
         this.root.setAttribute('aria-modal', 'true');
         this.root.setAttribute('aria-label', this.clip.title);
-        this.root.innerHTML = `<article class="hostMessage"><span class="hostEyebrow">LUMA · TU COMPAÑERA DE AVENTURAS</span><h1></h1><p class="hostTranscript"></p><p class="hostStatus" role="status">Preparando a Luma… Puedes continuar cuando quieras.</p><div class="hostControls"><button type="button" data-host="repeat">Escuchar otra vez</button><button type="button" data-host="mute" aria-pressed="false">Silenciar voz</button><label>Volumen<input type="range" aria-label="Volumen de Luma" min="0" max="1" step=".05" value=".85"></label></div><button class="hostContinue" type="button">${message === 'welcome' ? 'Elegir una aventura' : 'Continuar'}</button><button class="hostSkip" type="button">Omitir animación</button></article><p class="hostName" aria-hidden="true">Luma<span>Tu compañera de aventuras</span></p>`;
+        this.root.innerHTML = `<article class="hostMessage"><span class="hostEyebrow">LUMA · TU COMPAÑERA DE AVENTURAS</span><h1></h1><p class="hostShort"></p><div class="hostWorlds" aria-hidden="true"><span>🏫</span><span>🚀</span><span>🎨</span></div><details><summary>Ver lo que dice Luma</summary><p class="hostTranscript"></p></details><p class="hostStatus" role="status">Preparando a Luma… Puedes continuar cuando quieras.</p><div class="hostControls"><button type="button" data-host="repeat">Escuchar otra vez</button><button type="button" data-host="mute" aria-pressed="false">Silenciar voz</button><label>Volumen<input type="range" aria-label="Volumen de Luma" min="0" max="1" step=".05" value=".85"></label></div><button class="hostContinue" type="button">${message === 'welcome' ? '¡Elegir mi aventura! →' : '¡Terminé! →'}</button><button class="hostSkip" type="button">Ir al menú ahora</button></article><p class="hostName" aria-hidden="true">Luma<span>Tu compañera de aventuras</span></p>`;
         this.root.querySelector('h1')!.textContent = this.clip.title;
+        this.root.querySelector('.hostShort')!.textContent = message === 'welcome' ? '¡Tres mundos te esperan! Tú eliges dónde empezar.' : '¡Gracias por explorar conmigo!';
         this.root.querySelector('.hostTranscript')!.textContent = this.clip.text;
         document.body.append(this.root);
         canvas.classList.add('hostCanvas');
@@ -98,8 +99,7 @@ export class MenuHost {
             if (this.disposed || this.phase === 'leaving')
                 return;
             this.status(state === 'playing' ? 'Escucha a Luma…' : state === 'error' ? 'Puedes leer el mensaje o continuar.' : state === 'complete' ? '¡Vamos!' : 'Preparando la voz…');
-            if (state === 'complete')
-                this.leave();
+            // The child chooses when to leave; finishing audio does not advance the screen.
         };
         void this.lip.load(this.clip.id);
         void this.character.ready.then(() => {
@@ -153,13 +153,13 @@ export class MenuHost {
                 queueMicrotask(() => this.finish());
         });
         // Model/audio failure and mute never leave the child trapped in a presentation.
-        this.deadline = setTimeout(() => this.finish(), 60000);
+        this.deadline = setTimeout(() => { if (!this.disposed) this.status('Cuando quieras, pulsa el botón grande para continuar.'); }, 60000);
         document.addEventListener('keydown', this.onKey);
         (this.root.querySelector('.hostContinue') as HTMLElement).focus();
     }
     private status(text: string): void { this.root.querySelector('.hostStatus')!.textContent = text; }
     private leave(): void { if (this.disposed || this.phase === 'leaving')
-        return; this.speech.stop(); this.phase = 'leaving'; this.phaseStart = performance.now(); if (!this.loaded)
+        return; this.phase = 'leaving'; this.speech.stop(); this.phaseStart = performance.now(); if (!this.loaded)
         this.finish(); }
     private finish(): void { if (this.disposed)
         return; this.dispose(); this.done(); }
